@@ -3,6 +3,7 @@ package server
 import (
 	"container/list"
 	"fmt"
+	"log/slog"
 
 	"github.com/idot-digital/events-db/database"
 	pb "github.com/idot-digital/events-db/grpc"
@@ -16,9 +17,10 @@ type Server struct {
 	eventEmitterChannel chan *models.Event
 	eventListeners      *list.List
 	listenerIdCounter   int
+	logger              *slog.Logger
 }
 
-func New(queries *database.Queries, bufferSize int) *Server {
+func New(queries *database.Queries, bufferSize int, logger *slog.Logger) *Server {
 
 	emitterChannel := make(chan *models.Event, bufferSize)
 	listeners := list.New()
@@ -36,6 +38,8 @@ func New(queries *database.Queries, bufferSize int) *Server {
 		queries:             queries,
 		eventEmitterChannel: emitterChannel,
 		eventListeners:      listeners,
+		listenerIdCounter:   0,
+		logger:              logger,
 	}
 }
 
@@ -56,4 +60,8 @@ func (s *Server) AttachListener(bufferSize int) (chan *models.Event, *list.Eleme
 
 func (s *Server) DetachListener(listener *list.Element) {
 	s.eventListeners.Remove(listener)
+}
+
+func (s *Server) GetLogger() *slog.Logger {
+	return s.logger
 }

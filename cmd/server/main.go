@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -20,26 +20,30 @@ import (
 func main() {
 	cfg := config.New()
 
+	// Initialize logger
+	jsonHandler := slog.NewJSONHandler(os.Stderr, nil)
+	log := slog.New(jsonHandler)
+
 	// Initialize database connection
 	d, err := sql.Open("mysql", cfg.GetDBURI())
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	defer d.Close()
 
 	// Read and execute schema.sql
 	schemaSQL, err := os.ReadFile("schema.sql")
 	if err != nil {
-		log.Fatalf("Failed to read schema.sql: %v", err)
+		panic(fmt.Sprintf("Failed to read schema.sql: %v", err))
 	}
 
 	_, err = d.Exec(string(schemaSQL))
 	if err != nil {
-		log.Fatalf("Failed to execute schema.sql: %v", err)
+		panic(fmt.Sprintf("Failed to execute schema.sql: %v", err))
 	}
 
 	queries := database.New(d)
-	srv := server.New(queries, cfg.EventEmitterBufferLimit)
+	srv := server.New(queries, cfg.EventEmitterBufferLimit, log)
 	grpcHandlers := handlers.NewGRPCHandlers(srv)
 	httpHandlers := handlers.NewHTTPHandlers(srv)
 
@@ -47,13 +51,13 @@ func main() {
 	go func() {
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
 		if err != nil {
-			log.Fatalf("failed to listen: %v", err)
+			panic(fmt.Sprintf("failed to listen: %v", err))
 		}
 		s := grpc.NewServer()
 		pb.RegisterEventsDBServer(s, grpcHandlers)
-		log.Printf("gRPC server listening at %v", lis.Addr())
+		log.Info("gRPC server listening", "address", lis.Addr().String())
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			panic(fmt.Sprintf("failed to serve: %v", err))
 		}
 	}()
 
@@ -62,8 +66,8 @@ func main() {
 	http.HandleFunc("/events/get", httpHandlers.GetEventByIDHandler)
 	http.HandleFunc("/events/stream", httpHandlers.StreamEventsFromSubjectHandler)
 
-	log.Printf("REST server listening at :%d", cfg.RESTPort)
+	log.Info("REST server listening", "address", fmt.Sprintf(":%d", cfg.RESTPort))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.RESTPort), nil); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		panic(fmt.Sprintf("failed to serve: %v", err))
 	}
 }

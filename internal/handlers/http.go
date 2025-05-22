@@ -40,7 +40,8 @@ func (h *HTTPHandlers) CreateEventHandler(w http.ResponseWriter, r *http.Request
 		Data:    req.Data,
 	})
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create event: %v", err), http.StatusInternalServerError)
+		h.server.GetLogger().Error("Failed to create event", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -79,14 +80,15 @@ func (h *HTTPHandlers) GetEventByIDHandler(w http.ResponseWriter, r *http.Reques
 
 	res, err := h.server.GetQueries().GetEventByID(r.Context(), id)
 	if err != nil {
-		fmt.Printf("Failed to get event: %v", err) //TODO: do proper logging
+		h.server.GetLogger().Error("Failed to get event", "id", id, "error", err)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
 
 	time, err := res.Time.MarshalText()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to marshal time: %v", err), http.StatusInternalServerError)
+		h.server.GetLogger().Error("Failed to marshal time", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -130,14 +132,16 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 			ID:      lastID,
 		})
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to get events: %v", err), http.StatusInternalServerError)
+			h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
+			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
 
 		for _, event := range events {
 			time, err := event.Time.MarshalText()
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to marshal time: %v", err), http.StatusInternalServerError)
+				h.server.GetLogger().Error("Failed to marshal time", "error", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
 
@@ -150,7 +154,8 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 				Data:    event.Data,
 			})
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to marshal event: %v", err), http.StatusInternalServerError)
+				h.server.GetLogger().Error("Failed to marshal event", "error", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
 
@@ -172,7 +177,8 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 			if event.Subject == subject && event.ID > lastID {
 				eventJSON, err := json.Marshal(event)
 				if err != nil {
-					http.Error(w, fmt.Sprintf("Failed to marshal event: %v", err), http.StatusInternalServerError)
+					h.server.GetLogger().Error("Failed to marshal event", "error", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 					return
 				}
 
