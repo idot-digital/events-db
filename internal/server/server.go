@@ -7,6 +7,7 @@ import (
 
 	"github.com/idot-digital/events-db/database"
 	pb "github.com/idot-digital/events-db/grpc"
+	"github.com/idot-digital/events-db/internal/metrics"
 	"github.com/idot-digital/events-db/internal/models"
 )
 
@@ -21,7 +22,6 @@ type Server struct {
 }
 
 func New(queries *database.Queries, bufferSize int, logger *slog.Logger) *Server {
-
 	emitterChannel := make(chan *models.Event, bufferSize)
 	listeners := list.New()
 
@@ -55,11 +55,18 @@ func (s *Server) AttachListener(bufferSize int) (chan *models.Event, *list.Eleme
 	s.listenerIdCounter += 1
 	channel := make(chan *models.Event, bufferSize)
 	elmt := s.eventListeners.PushBack(channel)
+
+	// Update active streams metric
+	metrics.ActiveEventStreams.Inc()
+
 	return channel, elmt
 }
 
 func (s *Server) DetachListener(listener *list.Element) {
 	s.eventListeners.Remove(listener)
+
+	// Update active streams metric
+	metrics.ActiveEventStreams.Dec()
 }
 
 func (s *Server) GetLogger() *slog.Logger {
