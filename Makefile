@@ -18,4 +18,4 @@ proto:
 
 # Generate SQL code using sqlc
 sqlc:
-	sqlc generate
+	mkdir database && sqlc generate

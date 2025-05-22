@@ -11,7 +11,7 @@ FROM
   events
 WHERE
   id = ?
-LIMIT ?;
+LIMIT 1;
 
 -- name: GetEventsBySubject :many
 SELECT
