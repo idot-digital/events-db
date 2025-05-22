@@ -31,19 +31,22 @@ func main() {
 	// Initialize database connection
 	d, err := sql.Open("mysql", cfg.GetDBURI())
 	if err != nil {
-		panic(err)
+		log.Error("Failed to open database connection", "error", err)
+		os.Exit(1)
 	}
 	defer d.Close()
 
 	// Read and execute schema.sql
 	schemaSQL, err := os.ReadFile("schema.sql")
 	if err != nil {
-		panic(fmt.Sprintf("Failed to read schema.sql: %v", err))
+		log.Error("Failed to read schema.sql", "error", err)
+		os.Exit(1)
 	}
 
 	_, err = d.Exec(string(schemaSQL))
 	if err != nil {
-		panic(fmt.Sprintf("Failed to execute schema.sql: %v", err))
+		log.Error("Failed to execute schema.sql", "error", err)
+		os.Exit(1)
 	}
 
 	queries := database.New(d)
@@ -55,13 +58,15 @@ func main() {
 	go func() {
 		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
 		if err != nil {
-			panic(fmt.Sprintf("failed to listen: %v", err))
+			log.Error("Failed to listen for gRPC", "error", err)
+			os.Exit(1)
 		}
 		s := grpc.NewServer()
 		pb.RegisterEventsDBServer(s, grpcHandlers)
 		log.Info("gRPC server listening", "address", lis.Addr().String())
 		if err := s.Serve(lis); err != nil {
-			panic(fmt.Sprintf("failed to serve: %v", err))
+			log.Error("Failed to serve gRPC", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -78,7 +83,8 @@ func main() {
 
 	log.Info("REST server listening", "address", fmt.Sprintf(":%d", cfg.RESTPort))
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.RESTPort), mux); err != nil {
-		panic(fmt.Sprintf("failed to serve: %v", err))
+		log.Error("Failed to serve REST", "error", err)
+		os.Exit(1)
 	}
 }
 

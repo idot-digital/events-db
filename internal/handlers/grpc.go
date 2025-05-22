@@ -2,13 +2,15 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
 	"time"
 
 	"github.com/idot-digital/events-db/database"
 	pb "github.com/idot-digital/events-db/grpc"
 	"github.com/idot-digital/events-db/internal/models"
 	"github.com/idot-digital/events-db/internal/server"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // GRPCHandlers implements the gRPC server interface
@@ -29,7 +31,8 @@ func (h *GRPCHandlers) CreateEvent(ctx context.Context, req *pb.CreateEventReque
 		Data:    req.Data,
 	})
 	if err != nil {
-		return nil, err
+		h.server.GetLogger().Error("Failed to create event", "error", err)
+		return nil, status.Error(codes.Internal, "Failed to create event")
 	}
 
 	event := &models.Event{
@@ -51,12 +54,19 @@ func (h *GRPCHandlers) CreateEvent(ctx context.Context, req *pb.CreateEventReque
 func (h *GRPCHandlers) GetEventByID(ctx context.Context, req *pb.GetEventByIDRequest) (*pb.Event, error) {
 	res, err := h.server.GetQueries().GetEventByID(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			return nil, status.Error(codes.NotFound, "Event not found")
+		}
+		h.server.GetLogger().Error("Failed to get event", "id", req.Id, "error", err)
+		return nil, status.Error(codes.Internal, "Internal server error")
 	}
+
 	time, err := res.Time.MarshalText()
 	if err != nil {
-		return nil, err
+		h.server.GetLogger().Error("Failed to marshal time", "error", err)
+		return nil, status.Error(codes.Internal, "Failed to process event time")
 	}
+
 	return &pb.Event{
 		Id:      res.ID,
 		Source:  res.Source,
@@ -78,14 +88,21 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 			ID:      lastID,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get events: %v", err)
+			h.server.GetLogger().Error("Failed to get events", "subject", req.Subject, "error", err)
+			return status.Error(codes.Internal, "Failed to get events")
+		}
+
+		if len(events) == 0 {
+			// No events found, but this is not an error - just an empty result
+			break
 		}
 
 		pbEvents := make([]*pb.Event, 0, len(events))
 		for _, event := range events {
 			time, err := event.Time.MarshalText()
 			if err != nil {
-				return fmt.Errorf("failed to marshal time: %v", err)
+				h.server.GetLogger().Error("Failed to marshal time", "error", err)
+				return status.Error(codes.Internal, "Failed to process event time")
 			}
 
 			pbEvents = append(pbEvents, &pb.Event{
@@ -104,14 +121,13 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 			}
 			lastID = pbEvents[len(pbEvents)-1].Id
 			if err := stream.Send(reply); err != nil {
-				return fmt.Errorf("failed to send historical events: %v", err)
+				return status.Error(codes.Internal, "Failed to send events")
 			}
-		} else {
-			break
 		}
 	}
 
 	channel, listener := h.server.AttachListener(10) //TODO: make this configurable or find a smart solution
+	defer h.server.DetachListener(listener)
 
 	for {
 		select {
@@ -128,12 +144,11 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 					}},
 				}
 				if err := stream.Send(reply); err != nil {
-					return fmt.Errorf("failed to send new event: %v", err)
+					return status.Error(codes.Internal, "Failed to send new event")
 				}
 				lastID = event.ID
 			}
 		case <-ctx.Done():
-			h.server.DetachListener(listener)
 			return nil
 		}
 	}

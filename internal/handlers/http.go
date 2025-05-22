@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -80,8 +81,12 @@ func (h *HTTPHandlers) GetEventByIDHandler(w http.ResponseWriter, r *http.Reques
 
 	res, err := h.server.GetQueries().GetEventByID(r.Context(), id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Event not found", http.StatusNotFound)
+			return
+		}
 		h.server.GetLogger().Error("Failed to get event", "id", id, "error", err)
-		http.Error(w, "Not found", http.StatusNotFound)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -133,8 +138,13 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		})
 		if err != nil {
 			h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
-			http.Error(w, "Not found", http.StatusNotFound)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
+		}
+
+		if len(events) == 0 {
+			// No events found, but this is not an error - just an empty result
+			break
 		}
 
 		for _, event := range events {
@@ -163,14 +173,11 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 			w.(http.Flusher).Flush()
 			lastID = event.ID
 		}
-
-		if len(events) == 0 {
-			break
-		}
 	}
 
 	channel, listener := h.server.AttachListener(10) //TODO: make this configurable or find a smart solution
 
+	defer h.server.DetachListener(listener)
 	for {
 		select {
 		case event := <-channel:
@@ -187,7 +194,6 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 				lastID = event.ID
 			}
 		case <-clientGone:
-			h.server.DetachListener(listener)
 			return
 		}
 	}
