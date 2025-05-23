@@ -31,3 +31,7 @@ database/
   
 # grpc
 grpc/
+
+
+#other
+bin/
