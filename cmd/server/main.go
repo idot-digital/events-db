@@ -17,6 +17,7 @@ import (
 	"github.com/idot-digital/events-db/internal/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
@@ -60,11 +61,32 @@ func main() {
 			os.Exit(1)
 		}
 
-		// Create gRPC server with auth interceptors
-		s := grpc.NewServer(
-			grpc.UnaryInterceptor(middleware.AuthInterceptor(cfg.AuthToken)),
-			grpc.StreamInterceptor(middleware.StreamAuthInterceptor(cfg.AuthToken)),
-		)
+		var s *grpc.Server
+		// Configure TLS if certificates are provided
+		if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
+			log.Info("Starting gRPC server with TLS",
+				"cert_file", cfg.TLSCertFile,
+				"key_file", cfg.TLSKeyFile)
+
+			creds, err := credentials.NewServerTLSFromFile(cfg.TLSCertFile, cfg.TLSKeyFile)
+			if err != nil {
+				log.Error("Failed to load gRPC TLS credentials", "error", err)
+				os.Exit(1)
+			}
+
+			s = grpc.NewServer(
+				grpc.Creds(creds),
+				grpc.UnaryInterceptor(middleware.AuthInterceptor(cfg.AuthToken)),
+				grpc.StreamInterceptor(middleware.StreamAuthInterceptor(cfg.AuthToken)),
+			)
+		} else {
+			log.Info("Starting gRPC server without TLS")
+			s = grpc.NewServer(
+				grpc.UnaryInterceptor(middleware.AuthInterceptor(cfg.AuthToken)),
+				grpc.StreamInterceptor(middleware.StreamAuthInterceptor(cfg.AuthToken)),
+			)
+		}
+
 		pb.RegisterEventsDBServer(s, grpcHandlers)
 		log.Info("gRPC server listening", "address", lis.Addr().String())
 		if err := s.Serve(lis); err != nil {
@@ -85,8 +107,26 @@ func main() {
 	mux.HandleFunc("/events/stream", middleware.Auth(middleware.Metrics(httpHandlers.StreamEventsFromSubjectHandler, "stream_events"), cfg.AuthToken))
 
 	log.Info("REST server listening", "address", fmt.Sprintf(":%d", cfg.RESTPort))
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.RESTPort), mux); err != nil {
-		log.Error("Failed to serve REST", "error", err)
-		os.Exit(1)
+
+	// Check if TLS certificates are provided
+	if cfg.TLSCertFile != "" && cfg.TLSKeyFile != "" {
+		log.Info("Starting HTTPS server with TLS",
+			"cert_file", cfg.TLSCertFile,
+			"key_file", cfg.TLSKeyFile)
+		if err := http.ListenAndServeTLS(
+			fmt.Sprintf(":%d", cfg.RESTPort),
+			cfg.TLSCertFile,
+			cfg.TLSKeyFile,
+			mux,
+		); err != nil {
+			log.Error("Failed to serve REST over HTTPS", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		log.Info("Starting HTTP server (no TLS)")
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.RESTPort), mux); err != nil {
+			log.Error("Failed to serve REST", "error", err)
+			os.Exit(1)
+		}
 	}
 }

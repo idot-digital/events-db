@@ -17,6 +17,8 @@ type Config struct {
 	GRPCPort                int
 	RESTPort                int
 	AuthToken               string
+	TLSCertFile             string
+	TLSKeyFile              string
 }
 
 func New() *Config {
@@ -48,6 +50,8 @@ func New() *Config {
 	if !isSet {
 		authToken = "" // Empty token means no authentication required
 	}
+	tlsCertFile, _ := os.LookupEnv("TLS_CERT_FILE")
+	tlsKeyFile, _ := os.LookupEnv("TLS_KEY_FILE")
 
 	return &Config{
 		DBUser:                  DBUser,
@@ -60,6 +64,8 @@ func New() *Config {
 		GRPCPort:                *grpcPort,
 		RESTPort:                *restPort,
 		AuthToken:               authToken,
+		TLSCertFile:             tlsCertFile,
+		TLSKeyFile:              tlsKeyFile,
 	}
 }
 
