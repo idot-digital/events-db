@@ -15,11 +15,15 @@ import (
 
 // HTTPHandlers implements the HTTP server handlers
 type HTTPHandlers struct {
-	server *server.Server
+	server          *server.Server
+	streamBatchSize int32
 }
 
-func NewHTTPHandlers(s *server.Server) *HTTPHandlers {
-	return &HTTPHandlers{server: s}
+func NewHTTPHandlers(s *server.Server, streamBatchSize int) *HTTPHandlers {
+	return &HTTPHandlers{
+		server:          s,
+		streamBatchSize: int32(streamBatchSize),
+	}
 }
 
 func (h *HTTPHandlers) CreateEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +137,7 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	for {
 		events, err := h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
 			Subject: subject,
-			Limit:   10, // TODO: Move to config
+			Limit:   h.streamBatchSize,
 			ID:      lastID,
 		})
 		if err != nil {
@@ -175,7 +179,12 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		}
 	}
 
-	channel, listener := h.server.AttachListener(10) //TODO: make this configurable or find a smart solution
+	channel, listener, err := h.server.AttachListener()
+	if err != nil {
+		h.server.GetLogger().Error("Failed to attach listener", "subject", subject, "error", err)
+		http.Error(w, "Too many clients for this subject", http.StatusTooManyRequests)
+		return
+	}
 
 	defer h.server.DetachListener(listener)
 	for {

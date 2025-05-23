@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"github.com/idot-digital/events-db/database"
 	pb "github.com/idot-digital/events-db/grpc"
@@ -19,9 +20,13 @@ type Server struct {
 	eventListeners      *list.List
 	listenerIdCounter   int
 	logger              *slog.Logger
+	totalClients        int
+	clientsMutex        sync.Mutex
+	maxTotalClients     int
+	clientBufferSize    int
 }
 
-func New(queries *database.Queries, bufferSize int, logger *slog.Logger) *Server {
+func New(queries *database.Queries, bufferSize int, maxTotalClients int, clientBufferSize int, logger *slog.Logger) *Server {
 	emitterChannel := make(chan *models.Event, bufferSize)
 	listeners := list.New()
 
@@ -40,6 +45,9 @@ func New(queries *database.Queries, bufferSize int, logger *slog.Logger) *Server
 		eventListeners:      listeners,
 		listenerIdCounter:   0,
 		logger:              logger,
+		totalClients:        0,
+		maxTotalClients:     maxTotalClients,
+		clientBufferSize:    clientBufferSize,
 	}
 }
 
@@ -51,19 +59,31 @@ func (s *Server) GetQueries() *database.Queries {
 	return s.queries
 }
 
-func (s *Server) AttachListener(bufferSize int) (chan *models.Event, *list.Element) {
+func (s *Server) AttachListener() (chan *models.Event, *list.Element, error) {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
+	if s.totalClients >= s.maxTotalClients {
+		return nil, nil, fmt.Errorf("maximum number of total clients reached")
+	}
+
 	s.listenerIdCounter += 1
-	channel := make(chan *models.Event, bufferSize)
+	channel := make(chan *models.Event, s.clientBufferSize)
 	elmt := s.eventListeners.PushBack(channel)
+	s.totalClients++
 
 	// Update active streams metric
 	metrics.ActiveEventStreams.Inc()
 
-	return channel, elmt
+	return channel, elmt, nil
 }
 
 func (s *Server) DetachListener(listener *list.Element) {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+
 	s.eventListeners.Remove(listener)
+	s.totalClients--
 
 	// Update active streams metric
 	metrics.ActiveEventStreams.Dec()

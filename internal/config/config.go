@@ -19,11 +19,17 @@ type Config struct {
 	AuthToken               string
 	TLSCertFile             string
 	TLSKeyFile              string
+	ClientBufferSize        int
+	MaxTotalClients         int
+	StreamBatchSize         int
 }
 
 func New() *Config {
 	grpcPort := flag.Int("grpc-port", 50051, "The gRPC server port")
 	restPort := flag.Int("rest-port", 8080, "The REST server port")
+	clientBufferSize := flag.Int("client-buffer-size", 100, "Buffer size for client event channels")
+	maxTotalClients := flag.Int("max-total-clients", 10000, "Maximum total number of clients across all subjects")
+	streamBatchSize := flag.Int("stream-batch-size", 10, "Number of events to fetch in each stream batch")
 	flag.Parse()
 
 	DBUser, isSet := os.LookupEnv("MYSQL_USER")
@@ -59,13 +65,16 @@ func New() *Config {
 		DBName:                  DBName,
 		DBHost:                  DBHost,
 		DBPort:                  DBPortString,
-		DBItemLimit:             10, //TODO: Add an option to configure this or find a smarter way to set this
-		EventEmitterBufferLimit: 10, //TODO: Add an option to configure this or find a smarter way to set this
+		DBItemLimit:             10,
+		EventEmitterBufferLimit: 100,
 		GRPCPort:                *grpcPort,
 		RESTPort:                *restPort,
 		AuthToken:               authToken,
 		TLSCertFile:             tlsCertFile,
 		TLSKeyFile:              tlsKeyFile,
+		ClientBufferSize:        *clientBufferSize,
+		MaxTotalClients:         *maxTotalClients,
+		StreamBatchSize:         *streamBatchSize,
 	}
 }
 

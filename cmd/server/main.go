@@ -49,9 +49,9 @@ func main() {
 	}
 
 	queries := database.New(d)
-	srv := server.New(queries, cfg.EventEmitterBufferLimit, log)
-	grpcHandlers := handlers.NewGRPCHandlers(srv)
-	httpHandlers := handlers.NewHTTPHandlers(srv)
+	srv := server.New(queries, cfg.EventEmitterBufferLimit, cfg.MaxTotalClients, cfg.ClientBufferSize, log)
+	grpcHandlers := handlers.NewGRPCHandlers(srv, cfg.StreamBatchSize)
+	httpHandlers := handlers.NewHTTPHandlers(srv, cfg.StreamBatchSize)
 
 	// Start gRPC server
 	go func() {

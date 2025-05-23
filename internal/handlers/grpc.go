@@ -16,11 +16,15 @@ import (
 // GRPCHandlers implements the gRPC server interface
 type GRPCHandlers struct {
 	pb.UnimplementedEventsDBServer
-	server *server.Server
+	server          *server.Server
+	streamBatchSize int32
 }
 
-func NewGRPCHandlers(s *server.Server) *GRPCHandlers {
-	return &GRPCHandlers{server: s}
+func NewGRPCHandlers(s *server.Server, streamBatchSize int) *GRPCHandlers {
+	return &GRPCHandlers{
+		server:          s,
+		streamBatchSize: int32(streamBatchSize),
+	}
 }
 
 func (h *GRPCHandlers) CreateEvent(ctx context.Context, req *pb.CreateEventRequest) (*pb.CreateEventReply, error) {
@@ -84,7 +88,7 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 	for {
 		events, err := h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{
 			Subject: req.Subject,
-			Limit:   10, // TODO: Move to config
+			Limit:   h.streamBatchSize,
 			ID:      lastID,
 		})
 		if err != nil {
@@ -126,7 +130,12 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 		}
 	}
 
-	channel, listener := h.server.AttachListener(10) //TODO: make this configurable or find a smart solution
+	channel, listener, err := h.server.AttachListener()
+	if err != nil {
+		h.server.GetLogger().Error("Failed to attach listener", "subject", req.Subject, "error", err)
+		return status.Error(codes.ResourceExhausted, "Too many clients for this subject")
+	}
+
 	defer h.server.DetachListener(listener)
 
 	for {
