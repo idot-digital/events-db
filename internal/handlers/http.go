@@ -207,3 +207,20 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		}
 	}
 }
+
+func (h *HTTPHandlers) GetSubjectsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	subjects, err := h.server.GetQueries().GetAvailableSubjects(r.Context())
+	if err != nil {
+		h.server.GetLogger().Error("Failed to get subjects", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(subjects)
+}

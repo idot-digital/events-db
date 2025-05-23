@@ -55,3 +55,10 @@ WHERE
   AND MATCH(`subject`) AGAINST ($2 IN BOOLEAN MODE)
   AND `type` = $3
 LIMIT 50;
+
+
+-- name: GetAvailableSubjects :many
+SELECT
+  DISTINCT `subject`
+FROM
+  events;

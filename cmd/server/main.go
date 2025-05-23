@@ -102,6 +102,7 @@ func main() {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	// Wrap handlers with auth and metrics middleware
+	mux.HandleFunc("/subjects", middleware.Auth(middleware.Metrics(httpHandlers.GetSubjectsHandler, "get_subjects"), cfg.AuthToken))
 	mux.HandleFunc("/events", middleware.Auth(middleware.Metrics(httpHandlers.CreateEventHandler, "create_event"), cfg.AuthToken))
 	mux.HandleFunc("/events/get", middleware.Auth(middleware.Metrics(httpHandlers.GetEventByIDHandler, "get_event"), cfg.AuthToken))
 	mux.HandleFunc("/events/stream", middleware.Auth(middleware.Metrics(httpHandlers.StreamEventsFromSubjectHandler, "stream_events"), cfg.AuthToken))
