@@ -16,6 +16,7 @@ type Config struct {
 	EventEmitterBufferLimit int
 	GRPCPort                int
 	RESTPort                int
+	AuthToken               string
 }
 
 func New() *Config {
@@ -43,6 +44,10 @@ func New() *Config {
 	if !isSet {
 		DBPortString = "3306"
 	}
+	authToken, isSet := os.LookupEnv("AUTH_TOKEN")
+	if !isSet {
+		authToken = "" // Empty token means no authentication required
+	}
 
 	return &Config{
 		DBUser:                  DBUser,
@@ -54,6 +59,7 @@ func New() *Config {
 		EventEmitterBufferLimit: 10, //TODO: Add an option to configure this or find a smarter way to set this
 		GRPCPort:                *grpcPort,
 		RESTPort:                *restPort,
+		AuthToken:               authToken,
 	}
 }
 
