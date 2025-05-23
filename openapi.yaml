@@ -1,0 +1,167 @@
+openapi: 3.1.0
+info:
+  title: Events DB API
+  version: 1.0.0
+  description: API for managing and streaming events
+
+servers:
+  - url: http://localhost:8080
+    description: Default server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Bearer token authentication
+
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the event
+        source:
+          type: string
+          description: Source of the event
+        type:
+          type: string
+          description: Type of the event
+        subject:
+          type: string
+          description: Subject of the event
+        time:
+          type: string
+          format: date-time
+          description: Time when the event occurred
+        data:
+          type: string
+          format: byte
+          description: Event data in bytes
+
+    CreateEventRequest:
+      type: object
+      required:
+        - source
+        - type
+        - subject
+        - data
+      properties:
+        source:
+          type: string
+          description: Source of the event
+        type:
+          type: string
+          description: Type of the event
+        subject:
+          type: string
+          description: Subject of the event
+        data:
+          type: string
+          format: byte
+          description: Event data in bytes
+
+    CreateEventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID of the created event
+
+paths:
+  /events:
+    post:
+      summary: Create a new event
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "200":
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateEventResponse"
+        "400":
+          description: Invalid request body
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "500":
+          description: Internal server error
+
+  /events/get:
+    get:
+      summary: Get an event by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID of the event to retrieve
+      responses:
+        "200":
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          description: Invalid ID parameter
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "404":
+          description: Event not found
+        "500":
+          description: Internal server error
+
+  /events/stream:
+    get:
+      summary: Stream events for a subject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subject
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Subject to stream events for
+      responses:
+        "200":
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-Sent Events stream of events
+        "400":
+          description: Missing subject parameter
+        "401":
+          description: Unauthorized - Invalid or missing token
+        "429":
+          description: Too many clients for this subject
+        "500":
+          description: Internal server error
+
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      responses:
+        "200":
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
