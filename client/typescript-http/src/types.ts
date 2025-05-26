@@ -11,7 +11,7 @@ export interface CreateEventRequest {
   source: string;
   type: string;
   subject: string;
-  data: string;
+  data: Buffer;
 }
 
 export interface CreateEventResponse {
@@ -19,6 +19,6 @@ export interface CreateEventResponse {
 }
 
 export interface EventsDBClientConfig {
-  baseURL: string;
+  address: string;
   token?: string;
 }

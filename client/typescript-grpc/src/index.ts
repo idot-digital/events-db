@@ -4,9 +4,11 @@ import {
   GetEventByIDRequest,
   StreamEventsFromSubjectRequest,
   Event,
+  StreamEventsFromSubjectReply,
 } from "../gen/eventsdb";
 import * as grpc from "@grpc/grpc-js";
 import * as fs from "fs";
+import { Observable } from "rxjs";
 
 export interface EventsDBClientConfig {
   address: string;
@@ -29,7 +31,7 @@ export class EventsDBClient {
     }
 
     // Create an RPC implementation that uses the gRPC client
-    const rpc: any = {
+    const rpc = {
       request: (
         service: string,
         method: string,
@@ -72,7 +74,7 @@ export class EventsDBClient {
         service: string,
         method: string,
         data: Uint8Array
-      ): any => {
+      ): Observable<Uint8Array> => {
         const client = new grpc.Client(config.address, credentials);
 
         // Add authentication metadata if token is provided
@@ -88,7 +90,15 @@ export class EventsDBClient {
           data,
           metadata
         );
-        return stream;
+
+        return new Observable<Uint8Array>((subscriber) => {
+          stream.on("data", (data: Buffer) =>
+            subscriber.next(new Uint8Array(data))
+          );
+          stream.on("error", (err: any) => subscriber.error(err));
+          stream.on("end", () => subscriber.complete());
+          return () => stream.cancel();
+        });
       },
       bidirectionalStreamingRequest: (
         service: string,
@@ -102,18 +112,7 @@ export class EventsDBClient {
     this.client = new EventsDBClientImpl(rpc, { service: "grpc.EventsDB" });
   }
 
-  async createEvent(
-    source: string,
-    type: string,
-    subject: string,
-    data: Buffer
-  ): Promise<number> {
-    const request: CreateEventRequest = {
-      source,
-      type,
-      subject,
-      data: new Uint8Array(data),
-    };
+  async createEvent(request: CreateEventRequest): Promise<number> {
     const response = await this.client.CreateEvent(request);
     return response.id;
   }
@@ -130,7 +129,7 @@ export class EventsDBClient {
       fromId?: number;
       recursive?: boolean;
     } = {}
-  ): any {
+  ): Observable<StreamEventsFromSubjectReply> {
     const request: StreamEventsFromSubjectRequest = {
       subject,
       type: options.type,

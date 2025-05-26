@@ -18,3 +18,5 @@ yarn-error.log*
 
 # Ignore environment files
 .env 
+
+gen/

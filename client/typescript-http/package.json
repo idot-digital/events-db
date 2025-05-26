@@ -1,13 +1,15 @@
 {
   "name": "@idot-digital/eventsdb-http-client",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript client for Events DB API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc"
   },
-  "dependencies": {},
+  "dependencies": {
+    "eventsource": "^4.0.0"
+  },
   "devDependencies": {
     "@types/node": "^20.11.19",
     "typescript": "^5.3.3"

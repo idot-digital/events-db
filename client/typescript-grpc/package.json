@@ -1,11 +1,11 @@
 {
   "name": "@idot-digital/eventsdb-grpc-client",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript gRPC client for EventsDB",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "build": "npm run copy-proto && npm run generate && tsc",
+    "build": " tsc",
     "generate": "npx protoc --ts_proto_out=./ --proto_path=./ ./gen/eventsdb.proto",
     "copy-proto": "mkdir -p gen && cp ../../eventsdb.proto ./gen/",
     "start": "node dist/index.js"
