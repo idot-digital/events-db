@@ -21,7 +21,7 @@ before_script:
   stage: build
   script:
     - mkdir -p bin
-    - go build -o bin/eventsdb-$GOOS-$GOARCH cmd/eventsdb/main.go
+    - go build -o bin/eventsdb-$GOOS-$GOARCH cmd/server/main.go
   artifacts:
     paths:
       - bin/
