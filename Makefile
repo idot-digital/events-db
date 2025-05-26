@@ -14,7 +14,7 @@ bin:
 
 
 proto:
-	protoc --go_out=./grpc --go_opt=paths=source_relative --go-grpc_out=./grpc --go-grpc_opt=paths=source_relative eventsdb.proto
+	protoc --go_out=./grpc --go_opt=paths=source_relative --go-grpc_out=./grpc --experimental_allow_proto3_optional --go-grpc_opt=paths=source_relative eventsdb.proto
 
 sqlc:
 	mkdir -p database && sqlc generate
