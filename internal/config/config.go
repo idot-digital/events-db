@@ -23,7 +23,7 @@ type Config struct {
 	ClientBufferSize        int
 	MaxTotalClients         int
 	StreamBatchSize         int
-	LogLevel                *slog.LevelVar
+	LogLevel                slog.Level
 }
 
 func New() *Config {
@@ -61,19 +61,19 @@ func New() *Config {
 	tlsCertFile, _ := os.LookupEnv("TLS_CERT_FILE")
 	tlsKeyFile, _ := os.LookupEnv("TLS_KEY_FILE")
 
-	logLevel := new(slog.LevelVar)
+	logLevel := slog.LevelInfo
 	levelStr := os.Getenv("LOG_LEVEL")
 	switch levelStr {
 	case "DEBUG":
-		logLevel.Set(slog.LevelDebug)
+		logLevel = slog.LevelDebug
 	case "INFO":
-		logLevel.Set(slog.LevelInfo)
+		logLevel = slog.LevelInfo
 	case "WARN":
-		logLevel.Set(slog.LevelWarn)
+		logLevel = slog.LevelWarn
 	case "ERROR":
-		logLevel.Set(slog.LevelError)
+		logLevel = slog.LevelError
 	default:
-		logLevel.Set(slog.LevelInfo)
+		logLevel = slog.LevelInfo
 	}
 
 	return &Config{
@@ -92,6 +92,7 @@ func New() *Config {
 		ClientBufferSize:        *clientBufferSize,
 		MaxTotalClients:         *maxTotalClients,
 		StreamBatchSize:         *streamBatchSize,
+		LogLevel:                logLevel,
 	}
 }
 
