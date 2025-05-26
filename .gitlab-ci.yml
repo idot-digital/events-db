@@ -1,4 +1,4 @@
-image: golang:1.21
+image: golang:1.23
 
 variables:
   GOPATH: $CI_PROJECT_DIR/.go
