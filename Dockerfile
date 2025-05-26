@@ -6,11 +6,15 @@ ARG BINARY_ARM64
 
 WORKDIR /app
 
+# Copy the binaries into the build context
+COPY $BINARY_AMD64 /app/eventsdb-amd64
+COPY $BINARY_ARM64 /app/eventsdb-arm64
+
 # Select the appropriate binary based on the target platform
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
-        cp $BINARY_AMD64 /app/eventsdb; \
+        cp /app/eventsdb-amd64 /app/eventsdb; \
     elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        cp $BINARY_ARM64 /app/eventsdb; \
+        cp /app/eventsdb-arm64 /app/eventsdb; \
     else \
         echo "Unsupported platform: $TARGETPLATFORM" && exit 1; \
     fi

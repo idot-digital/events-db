@@ -77,11 +77,14 @@ docker:
     - docker buildx create --use
     - docker buildx inspect --bootstrap
   script:
+    - mkdir -p docker-bin
+    - cp bin/eventsdb-linux-amd64 docker-bin/
+    - cp bin/eventsdb-linux-arm64 docker-bin/
     - |
       docker buildx build \
         --platform linux/amd64,linux/arm64 \
-        --build-arg BINARY_AMD64=bin/eventsdb-linux-amd64 \
-        --build-arg BINARY_ARM64=bin/eventsdb-linux-arm64 \
+        --build-arg BINARY_AMD64=docker-bin/eventsdb-linux-amd64 \
+        --build-arg BINARY_ARM64=docker-bin/eventsdb-linux-arm64 \
         -t $DOCKER_IMAGE:$DOCKER_TAG \
         -t $DOCKER_IMAGE:latest \
         --push \
