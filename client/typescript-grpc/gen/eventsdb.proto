@@ -1,0 +1,48 @@
+syntax = "proto3";
+package grpc;
+option go_package = "github.com/eventsdb/grpc";
+
+service EventsDB {
+  // Sends a greeting
+  rpc CreateEvent (CreateEventRequest) returns (CreateEventReply) {}
+  rpc GetEventByID (GetEventByIDRequest) returns (Event) {}
+  rpc StreamEventsFromSubject (StreamEventsFromSubjectRequest) returns (stream StreamEventsFromSubjectReply) {}
+}
+
+// The request message containing the user's name.
+message CreateEventRequest {
+  string source = 1;
+  string type = 2;
+  string subject = 3;
+  bytes data = 4;
+}
+
+// The response message containing the greetings
+message CreateEventReply {
+  int64 id = 1;
+}
+
+message GetEventByIDRequest {
+  int64 id = 1;
+}
+
+message Event {
+  int64 id = 1;
+  string source = 2;
+  string type = 3;
+  string subject = 4;
+  string time = 5;
+  bytes data = 6;
+}
+
+message StreamEventsFromSubjectRequest {
+  string subject = 1;
+  optional string type = 2;
+  optional int64 from_id = 3;
+  optional bool recursive = 4;
+}
+
+message StreamEventsFromSubjectReply {
+  repeated Event events = 1;
+}
+
