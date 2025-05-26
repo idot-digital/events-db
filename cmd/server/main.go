@@ -117,6 +117,9 @@ func main() {
 	mux.HandleFunc("/events/get", middleware.Auth(middleware.Metrics(httpHandlers.GetEventByIDHandler, "get_event"), cfg.AuthToken))
 	mux.HandleFunc("/events/stream", middleware.Auth(middleware.Metrics(httpHandlers.StreamEventsFromSubjectHandler, "stream_events"), cfg.AuthToken))
 
+	// Wrap the mux with our logging middleware
+	handler := middleware.Logging(log, mux)
+
 	log.Info("REST server listening", "address", fmt.Sprintf(":%d", cfg.RESTPort))
 
 	// Check if TLS certificates are provided
@@ -124,18 +127,29 @@ func main() {
 		log.Info("Starting HTTPS server with TLS",
 			"cert_file", cfg.TLSCertFile,
 			"key_file", cfg.TLSKeyFile)
-		if err := http.ListenAndServeTLS(
+
+		// Create a server with proper logging configuration
+		srv := middleware.ConfigureServer(
 			fmt.Sprintf(":%d", cfg.RESTPort),
-			cfg.TLSCertFile,
-			cfg.TLSKeyFile,
-			mux,
-		); err != nil {
+			handler,
+			log,
+		)
+
+		if err := srv.ListenAndServeTLS(cfg.TLSCertFile, cfg.TLSKeyFile); err != nil {
 			log.Error("Failed to serve REST over HTTPS", "error", err)
 			os.Exit(1)
 		}
 	} else {
 		log.Info("Starting HTTP server (no TLS)")
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.RESTPort), mux); err != nil {
+
+		// Create a server with proper logging configuration
+		srv := middleware.ConfigureServer(
+			fmt.Sprintf(":%d", cfg.RESTPort),
+			handler,
+			log,
+		)
+
+		if err := srv.ListenAndServe(); err != nil {
 			log.Error("Failed to serve REST", "error", err)
 			os.Exit(1)
 		}
