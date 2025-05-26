@@ -1,4 +1,4 @@
-image: golang:1.23
+image: idotdigital/builder
 
 variables:
   GOPATH: $CI_PROJECT_DIR/.go
