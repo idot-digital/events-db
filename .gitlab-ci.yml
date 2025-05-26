@@ -14,7 +14,7 @@ stages:
 
 before_script:
   - mkdir -p $GOPATH/bin
-  - export PATH=$GOPATH/bin:$PATH
+  - export PATH="$PATH:$HOME/go/bin"
   - go mod download
 
 .build_template: &build_definition
