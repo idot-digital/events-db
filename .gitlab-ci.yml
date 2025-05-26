@@ -103,7 +103,7 @@ typescript-http-client:
     - npm install
     - npm run build
     - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-    - npm publish
+    - npm publish --access public
     - echo $'@idot-digital:registry=https://git.idot.digital/api/v4/packages/npm/\n//git.idot.digital/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
     - npm publish
 
@@ -114,7 +114,7 @@ typescript-grpc-client:
     - npm install
     - npm run build
     - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-    - npm publish
+    - npm publish --access public
     - echo $'@idot-digital:registry=https://git.idot.digital/api/v4/packages/npm/\n//git.idot.digital/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
     - npm publish
 
