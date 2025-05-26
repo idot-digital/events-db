@@ -1,6 +1,6 @@
 {
   "name": "@idot-digital/eventsdb-http-client",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "TypeScript client for Events DB API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
