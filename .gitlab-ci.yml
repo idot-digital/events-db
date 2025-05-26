@@ -96,6 +96,16 @@ docker:
     - main
     - tags
 
+typescript-http-client:
+  stage: build
+  script:
+    - cd client/typescript-http
+    - npm install
+    - npm run build
+    - npm publish
+    - echo $'@idot-digital:registry=https://git.idot.digital/api/v4/packages/npm/\n//git.idot.digital/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
+    - npm publish
+
 release:
   stage: release
   image: alpine:latest
