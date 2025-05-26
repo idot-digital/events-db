@@ -21,6 +21,7 @@ before_script:
   stage: build
   script:
     - mkdir -p bin
+    - make proto sqlc
     - go build -o bin/eventsdb-$GOOS-$GOARCH cmd/server/main.go
   artifacts:
     paths:
