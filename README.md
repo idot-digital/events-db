@@ -15,7 +15,7 @@ A high-performance event storage and streaming service that supports both HTTP a
 
 ## API Documentation
 
-The API is documented using OpenAPI 3.1.0 specification. You can find the complete API documentation in `openapi.yaml`.
+The API is documented using OpenAPI 3.1.0 specification. You can find the complete API documentation in [`docs/openapi.yaml`](docs/openapi.yaml).
 
 ### Event Structure
 
@@ -28,6 +28,35 @@ Events follow the CloudEvents specification with the following fields:
 | subject | string | Yes      | Subject of the event         |
 | data    | bytes  | Yes      | Event data in bytes          |
 | time    | string | No       | Time when the event occurred |
+
+## Installation
+
+There are three ways to install and run events-db:
+
+1. Using Docker
+2. Using the pre-built binaries
+3. Building from source
+
+### Using Docker
+
+The easiest way to run events-db is using Docker. Our example [`docker-compose.yml`](docs/docker-compose.yml) should get you started quickly.
+
+### Using Pre-built Binaries
+
+<!--
+The pre-built binaries can be found in the [releases page](https://github.com/idot-digital/events-db/releases). -->
+
+We currently do not have pre-built binaries available. We are working on it!
+
+### Building from Source
+
+```bash
+git clone https://github.com/idot-digital/events-db.git
+cd events-db
+make build
+```
+
+## Usage
 
 ### HTTP Endpoints
 
@@ -58,12 +87,6 @@ Authorization: Bearer <token>
 ```http
 GET /events/stream?subject=<subject>
 Authorization: Bearer <token>
-```
-
-#### Metrics
-
-```http
-GET /metrics
 ```
 
 ### gRPC Interface
@@ -130,35 +153,6 @@ The service exposes Prometheus metrics at the `/metrics` endpoint:
 - TLS support can be enabled by providing certificate and key files
 - Both HTTP and gRPC interfaces support authentication
 - The metrics endpoint is publicly accessible without authentication
-
-## Building and Running
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   go mod download
-   ```
-3. Build the service:
-   ```bash
-   go build -o events-db ./cmd/server
-   ```
-4. Run the service:
-   ```bash
-   ./events-db
-   ```
-
-## Development
-
-### Prerequisites
-
-- Go 1.23 or later
-- MySQL 5.7 or later
-
-### Running Tests
-
-```bash
-go test ./...
-```
 
 ## License
 
