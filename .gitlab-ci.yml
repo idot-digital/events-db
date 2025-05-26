@@ -107,6 +107,17 @@ typescript-http-client:
     - echo $'@idot-digital:registry=https://git.idot.digital/api/v4/packages/npm/\n//git.idot.digital/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
     - npm publish
 
+typescript-grpc-client:
+  stage: build
+  script:
+    - cd client/typescript-grpc
+    - npm install
+    - npm run build
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+    - npm publish
+    - echo $'@idot-digital:registry=https://git.idot.digital/api/v4/packages/npm/\n//git.idot.digital/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
+    - npm publish
+
 release:
   stage: release
   image: alpine:latest

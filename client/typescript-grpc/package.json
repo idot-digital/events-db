@@ -1,5 +1,5 @@
 {
-  "name": "eventsdb-grpc-client",
+  "name": "@idot-digital/eventsdb-grpc-client",
   "version": "1.0.0",
   "description": "TypeScript gRPC client for EventsDB",
   "main": "dist/index.js",
