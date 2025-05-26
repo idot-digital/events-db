@@ -24,7 +24,9 @@ func main() {
 	cfg := config.New()
 
 	// Initialize logger
-	jsonHandler := slog.NewJSONHandler(os.Stderr, nil)
+	jsonHandler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		Level: cfg.LogLevel,
+	})
 	log := slog.New(jsonHandler)
 
 	// Initialize database connection

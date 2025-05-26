@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 )
 
@@ -22,6 +23,7 @@ type Config struct {
 	ClientBufferSize        int
 	MaxTotalClients         int
 	StreamBatchSize         int
+	LogLevel                *slog.LevelVar
 }
 
 func New() *Config {
@@ -58,6 +60,21 @@ func New() *Config {
 	}
 	tlsCertFile, _ := os.LookupEnv("TLS_CERT_FILE")
 	tlsKeyFile, _ := os.LookupEnv("TLS_KEY_FILE")
+
+	logLevel := new(slog.LevelVar)
+	levelStr := os.Getenv("LOG_LEVEL")
+	switch levelStr {
+	case "DEBUG":
+		logLevel.Set(slog.LevelDebug)
+	case "INFO":
+		logLevel.Set(slog.LevelInfo)
+	case "WARN":
+		logLevel.Set(slog.LevelWarn)
+	case "ERROR":
+		logLevel.Set(slog.LevelError)
+	default:
+		logLevel.Set(slog.LevelInfo)
+	}
 
 	return &Config{
 		DBUser:                  DBUser,
