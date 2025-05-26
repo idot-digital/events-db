@@ -35,6 +35,14 @@ func main() {
 	}
 	defer d.Close()
 
+	_, err = d.Exec("SELECT 1;")
+	if err != nil {
+		log.Error("Could not connect to database", "error", err)
+		log.Error("Please check if the database is running and the credentials are correct")
+		log.Debug("The following connection string was used: " + cfg.GetDBURI())
+		os.Exit(1)
+	}
+
 	// Read and execute schema.sql
 	schemaSQL, err := os.ReadFile("schema.sql")
 	if err != nil {
