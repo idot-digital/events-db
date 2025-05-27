@@ -4,7 +4,7 @@ export interface Event {
   type: string;
   subject: string;
   time: string;
-  data: string;
+  data: Uint8Array<ArrayBufferLike>;
 }
 
 export interface CreateEventRequest {

@@ -31,7 +31,7 @@ export class EventsDBClient {
         source: request.source,
         type: request.type,
         subject: request.subject,
-        data: request.data.toString(),
+        data: request.data.toString("base64"),
       }),
     });
 
@@ -57,7 +57,16 @@ export class EventsDBClient {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    return {
+      id: data.id,
+      source: data.source,
+      type: data.type,
+      subject: data.subject,
+      time: data.time,
+      data: Buffer.from(data.data, "base64"),
+    };
   }
 
   /**
@@ -79,7 +88,15 @@ export class EventsDBClient {
 
     eventSource.onmessage = (message) => {
       try {
-        const eventData = JSON.parse(message.data) as Event;
+        const rawEventData = JSON.parse(message.data);
+        const eventData = {
+          id: rawEventData.id,
+          source: rawEventData.source,
+          type: rawEventData.type,
+          subject: rawEventData.subject,
+          time: rawEventData.time,
+          data: Buffer.from(rawEventData.data, "base64"),
+        };
         onEvent(eventData);
       } catch (error) {
         onError(

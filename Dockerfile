@@ -34,8 +34,8 @@ RUN apk add --no-cache ca-certificates tzdata
 COPY --from=builder /app/eventsdb /app/eventsdb
 
 RUN mkdir -p /app/example
-COPY --from=cert-generator server.key /app/example/server.key
-COPY --from=cert-generator server.crt /app/example/server.crt
+COPY --from=cert-generator ./server.key /app/example/server.key
+COPY --from=cert-generator ./server.crt /app/example/server.crt
 RUN chmod 644 /app/example/server.key /app/example/server.crt
 
 # Copy schema and queries
