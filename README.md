@@ -58,6 +58,25 @@ make build
 
 ## Usage
 
+## Client Libraries
+
+We provide client libraries for the following languages:
+
+- [TypeScript/JavaScript (gRPC)](client/typescript-grpc)
+- [TypeScript/JavaScript (HTTP)\*](client/typescript-http)
+
+\* The HTTP client should only be used, when the gRPC client is not an option. HTTP has much higher overhead due to the need to encode/decode the data as base64.
+
+### gRPC Interface
+
+The service also provides a gRPC interface with the following methods:
+
+- `CreateEvent`
+- `GetEventByID`
+- `StreamEventsFromSubject`
+
+The gRPC service definition can be found in `eventsdb.proto`.
+
 ### HTTP Endpoints
 
 The data field needs to be base64 encoded and will be returned as base64 encoded string.
@@ -90,16 +109,6 @@ Authorization: Bearer <token>
 GET /events/stream?subject=<subject>
 Authorization: Bearer <token>
 ```
-
-### gRPC Interface
-
-The service also provides a gRPC interface with the following methods:
-
-- `CreateEvent`
-- `GetEventByID`
-- `StreamEventsFromSubject`
-
-The gRPC service definition can be found in `eventsdb.proto`.
 
 ## Configuration
 
