@@ -83,7 +83,7 @@ func (h *GRPCHandlers) GetEventByID(ctx context.Context, req *pb.GetEventByIDReq
 
 func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRequest, stream pb.EventsDB_StreamEventsFromSubjectServer) error {
 	ctx := stream.Context()
-	lastID := int64(0)
+	lastID := *req.FromId
 
 	for {
 		events, err := h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{

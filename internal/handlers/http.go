@@ -148,6 +148,21 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
 		return
 	}
+	// eventType := r.URL.Query().Get("type")
+	lastID := int64(0)
+	fromIDStr := r.URL.Query().Get("from_id")
+	if fromIDStr != "" {
+		fromID, err := strconv.ParseInt(fromIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid from_id parameter", http.StatusBadRequest)
+			return
+		}
+		lastID = fromID
+	}
+	// recursive := false
+	// if r.URL.Query().Get("recursive") == "true" {
+	// 	recursive = true
+	// }
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -155,7 +170,6 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	clientGone := w.(http.CloseNotifier).CloseNotify()
-	lastID := int64(0)
 
 	for {
 		events, err := h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
