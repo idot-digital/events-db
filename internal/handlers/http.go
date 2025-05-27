@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +20,22 @@ type HTTPHandlers struct {
 	streamBatchSize int32
 }
 
+type HTTPCreateEventRequest struct {
+	Source  string `json:"source"`
+	Type    string `json:"type"`
+	Subject string `json:"subject"`
+	Data    string `json:"data"`
+}
+
+type HTTPEvent struct {
+	ID      int64  `json:"id"`
+	Source  string `json:"source"`
+	Type    string `json:"type"`
+	Subject string `json:"subject"`
+	Time    string `json:"time"`
+	Data    string `json:"data"`
+}
+
 func NewHTTPHandlers(s *server.Server, streamBatchSize int) *HTTPHandlers {
 	return &HTTPHandlers{
 		server:          s,
@@ -32,9 +49,15 @@ func (h *HTTPHandlers) CreateEventHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var req models.CreateEventRequest
+	var req HTTPCreateEventRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	data, err := base64.StdEncoding.DecodeString(req.Data)
+	if err != nil {
+		http.Error(w, "Invalid data", http.StatusBadRequest)
 		return
 	}
 
@@ -42,7 +65,7 @@ func (h *HTTPHandlers) CreateEventHandler(w http.ResponseWriter, r *http.Request
 		Source:  req.Source,
 		Type:    req.Type,
 		Subject: req.Subject,
-		Data:    req.Data,
+		Data:    data,
 	})
 	if err != nil {
 		h.server.GetLogger().Error("Failed to create event", "error", err)
@@ -56,7 +79,7 @@ func (h *HTTPHandlers) CreateEventHandler(w http.ResponseWriter, r *http.Request
 		Type:    req.Type,
 		Subject: req.Subject,
 		Time:    time.Now().Format(time.RFC3339),
-		Data:    req.Data,
+		Data:    data,
 	}
 
 	h.server.GetEmitterChan() <- event
@@ -101,17 +124,17 @@ func (h *HTTPHandlers) GetEventByIDHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	event := models.Event{
+	httpEvent := HTTPEvent{
 		ID:      res.ID,
 		Source:  res.Source,
 		Type:    res.Type,
 		Subject: res.Subject,
 		Time:    string(time),
-		Data:    res.Data,
+		Data:    base64.StdEncoding.EncodeToString(res.Data),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(event)
+	json.NewEncoder(w).Encode(httpEvent)
 }
 
 func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -159,13 +182,13 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 				return
 			}
 
-			eventJSON, err := json.Marshal(models.Event{
+			eventJSON, err := json.Marshal(HTTPEvent{
 				ID:      event.ID,
 				Source:  event.Source,
 				Type:    event.Type,
 				Subject: event.Subject,
 				Time:    string(time),
-				Data:    event.Data,
+				Data:    base64.StdEncoding.EncodeToString(event.Data),
 			})
 			if err != nil {
 				h.server.GetLogger().Error("Failed to marshal event", "error", err)
@@ -191,7 +214,14 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		select {
 		case event := <-channel:
 			if event.Subject == subject && event.ID > lastID {
-				eventJSON, err := json.Marshal(event)
+				eventJSON, err := json.Marshal(HTTPEvent{
+					ID:      event.ID,
+					Source:  event.Source,
+					Type:    event.Type,
+					Subject: event.Subject,
+					Time:    event.Time,
+					Data:    base64.StdEncoding.EncodeToString(event.Data),
+				})
 				if err != nil {
 					h.server.GetLogger().Error("Failed to marshal event", "error", err)
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)

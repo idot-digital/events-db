@@ -60,6 +60,8 @@ make build
 
 ### HTTP Endpoints
 
+The data field needs to be base64 encoded and will be returned as base64 encoded string.
+
 #### Create Event
 
 ```http
@@ -71,7 +73,7 @@ Authorization: Bearer <token>
   "source": "string",
   "type": "string",
   "subject": "string",
-  "data": "bytes"
+  "data": "data"
 }
 ```
 
