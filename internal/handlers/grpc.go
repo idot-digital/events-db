@@ -81,9 +81,12 @@ func (h *GRPCHandlers) GetEventByID(ctx context.Context, req *pb.GetEventByIDReq
 	}, nil
 }
 
-func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRequest, stream pb.EventsDB_StreamEventsFromSubjectServer) error {
+func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.EventsFromSubjectRequest, stream pb.EventsDB_StreamEventsFromSubjectServer) error {
 	ctx := stream.Context()
-	lastID := *req.FromId
+	var lastID int64
+	if req.FromId != nil {
+		lastID = *req.FromId
+	}
 
 	for {
 		events, err := h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{
@@ -120,7 +123,7 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 		}
 
 		if len(pbEvents) > 0 {
-			reply := &pb.StreamEventsFromSubjectReply{
+			reply := &pb.EventsFromSubjectReply{
 				Events: pbEvents,
 			}
 			lastID = pbEvents[len(pbEvents)-1].Id
@@ -142,7 +145,7 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 		select {
 		case event := <-channel:
 			if event.Subject == req.Subject && event.ID > lastID {
-				reply := &pb.StreamEventsFromSubjectReply{
+				reply := &pb.EventsFromSubjectReply{
 					Events: []*pb.Event{{
 						Id:      event.ID,
 						Source:  event.Source,
@@ -151,6 +154,7 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 						Time:    event.Time,
 						Data:    event.Data,
 					}},
+					HasMore: true,
 				}
 				if err := stream.Send(reply); err != nil {
 					return status.Error(codes.Internal, "Failed to send new event")
@@ -161,4 +165,51 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.StreamEventsFromSubjectRe
 			return nil
 		}
 	}
+}
+
+func (h *GRPCHandlers) GetHistoricEventsFromSubject(ctx context.Context, req *pb.EventsFromSubjectRequest) (*pb.EventsFromSubjectReply, error) {
+	var lastID int64
+	if req.FromId != nil {
+		lastID = *req.FromId
+	}
+
+	events, err := h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{
+		Subject: req.Subject,
+		Limit:   h.streamBatchSize, //TODO: use a different setting
+		ID:      lastID,
+	})
+	if err != nil {
+		h.server.GetLogger().Error("Failed to get events", "subject", req.Subject, "error", err)
+		return nil, status.Error(codes.Internal, "Failed to get events")
+	}
+
+	if len(events) == 0 {
+		return &pb.EventsFromSubjectReply{
+			Events:  []*pb.Event{},
+			HasMore: false,
+		}, nil
+	}
+
+	pbEvents := make([]*pb.Event, 0, len(events))
+	for _, event := range events {
+		time, err := event.Time.MarshalText()
+		if err != nil {
+			h.server.GetLogger().Error("Failed to marshal time", "error", err)
+			return nil, status.Error(codes.Internal, "Failed to process event time")
+		}
+
+		pbEvents = append(pbEvents, &pb.Event{
+			Id:      event.ID,
+			Source:  event.Source,
+			Type:    event.Type,
+			Subject: event.Subject,
+			Time:    string(time),
+			Data:    event.Data,
+		})
+	}
+
+	return &pb.EventsFromSubjectReply{
+		Events:  pbEvents,
+		HasMore: len(events) == int(h.streamBatchSize),
+	}, nil
 }

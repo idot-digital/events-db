@@ -17,6 +17,9 @@ sqlc:
 build-db:
 	go build -o bin/eventsdb cmd/server/main.go
 
+run-db:
+	go run cmd/server/main.go
+
 ts-client-install:
 	cd client/typescript-grpc && npm install
 	cd client/typescript-http && npm install

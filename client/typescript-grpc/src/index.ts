@@ -2,9 +2,9 @@ import {
   EventsDBClientImpl,
   CreateEventRequest,
   GetEventByIDRequest,
-  StreamEventsFromSubjectRequest,
+  EventsFromSubjectRequest,
   Event,
-  StreamEventsFromSubjectReply,
+  EventsFromSubjectReply,
 } from "../gen/eventsdb";
 import * as grpc from "@grpc/grpc-js";
 import * as fs from "fs";
@@ -125,17 +125,32 @@ export class EventsDBClient {
   streamEventsFromSubject(
     subject: string,
     options: {
-      type?: string;
       fromId?: number;
-      recursive?: boolean;
+      // type?: string;
+      // recursive?: boolean;
     } = {}
-  ): Observable<StreamEventsFromSubjectReply> {
-    const request: StreamEventsFromSubjectRequest = {
+  ): Observable<EventsFromSubjectReply> {
+    const request: EventsFromSubjectRequest = {
       subject,
       fromId: options.fromId,
       // type: options.type,
       // recursive: options.recursive,
     };
     return this.client.StreamEventsFromSubject(request);
+  }
+
+  getHistoricEventsFromSubject(
+    subject: string,
+    options: {
+      fromId?: number;
+      // type?: string;
+      // recursive?: boolean;
+    } = {}
+  ): Promise<EventsFromSubjectReply> {
+    const request: EventsFromSubjectRequest = {
+      subject,
+      fromId: options.fromId ?? undefined,
+    };
+    return this.client.GetHistoricEventsFromSubject(request);
   }
 }

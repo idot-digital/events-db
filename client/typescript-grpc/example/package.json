@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@idot-digital/eventsdb-grpc-client": "^0.0.6"
+    "@idot-digital/eventsdb-grpc-client": "file:../../typescript-grpc"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

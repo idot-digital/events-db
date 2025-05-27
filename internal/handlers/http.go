@@ -36,6 +36,11 @@ type HTTPEvent struct {
 	Data    string `json:"data"`
 }
 
+type HTTPEventsFromSubjectReply struct {
+	Events  []HTTPEvent `json:"events"`
+	HasMore bool        `json:"has_more"`
+}
+
 func NewHTTPHandlers(s *server.Server, streamBatchSize int) *HTTPHandlers {
 	return &HTTPHandlers{
 		server:          s,
@@ -250,6 +255,82 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 			return
 		}
 	}
+}
+
+func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	subject := r.URL.Query().Get("subject")
+	if subject == "" {
+		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
+		return
+	}
+	// eventType := r.URL.Query().Get("type")
+	lastID := int64(0)
+	fromIDStr := r.URL.Query().Get("from_id")
+	if fromIDStr != "" {
+		fromID, err := strconv.ParseInt(fromIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid from_id parameter", http.StatusBadRequest)
+			return
+		}
+		lastID = fromID
+	}
+	// recursive := false
+	// if r.URL.Query().Get("recursive") == "true" {
+	// 	recursive = true
+	// }
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	events, err := h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
+		Subject: subject,
+		Limit:   h.streamBatchSize,
+		ID:      lastID,
+	})
+	if err != nil {
+		h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if len(events) == 0 {
+		// No events found, but this is not an error - just an empty result
+		json.NewEncoder(w).Encode(HTTPEventsFromSubjectReply{
+			Events:  []HTTPEvent{},
+			HasMore: false,
+		})
+		return
+	}
+
+	httpEvents := make([]HTTPEvent, 0, len(events))
+
+	for _, event := range events {
+		time, err := event.Time.MarshalText()
+		if err != nil {
+			h.server.GetLogger().Error("Failed to marshal time", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		httpEvents = append(httpEvents, HTTPEvent{
+			ID:      event.ID,
+			Source:  event.Source,
+			Type:    event.Type,
+			Subject: event.Subject,
+			Time:    string(time),
+			Data:    base64.StdEncoding.EncodeToString(event.Data),
+		})
+	}
+
+	json.NewEncoder(w).Encode(HTTPEventsFromSubjectReply{
+		Events:  httpEvents,
+		HasMore: len(events) == int(h.streamBatchSize),
+	})
 }
 
 func (h *HTTPHandlers) GetSubjectsHandler(w http.ResponseWriter, r *http.Request) {

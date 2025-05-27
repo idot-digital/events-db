@@ -43,7 +43,21 @@ const subscription = stream.subscribe((event) => {
   });
 });
 
-setTimeout(() => {
+setTimeout(async () => {
   subscription.unsubscribe();
   console.log("Subscription cancelled");
+
+  const historicEvents = await client.getHistoricEventsFromSubject("subject");
+  console.log(
+    `Got ${historicEvents.events.length} historic events: ${JSON.stringify(
+      historicEvents.events.map((e) => ({
+        id: e.id,
+        source: e.source,
+        type: e.type,
+        subject: e.subject,
+        time: e.time,
+        data: Buffer.from(e.data).toString(),
+      }))
+    )}`
+  );
 }, 1000);

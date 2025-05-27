@@ -22,3 +22,20 @@ export interface EventsDBClientConfig {
   address: string;
   token?: string;
 }
+
+export interface EventsFromSubjectReply {
+  events: Event[];
+  has_more: boolean;
+}
+
+export interface GetHistoricEventsFromSubjectInternalReply {
+  events: {
+    id: number;
+    source: string;
+    type: string;
+    subject: string;
+    time: string;
+    data: string;
+  }[];
+  has_more: boolean;
+}

@@ -14,6 +14,6 @@
     "tsx": "^4.19.4"
   },
   "dependencies": {
-    "@idot-digital/eventsdb-http-client": "^0.0.6"
+    "@idot-digital/eventsdb-http-client": "file:../../typescript-http"
   }
 }

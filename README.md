@@ -73,6 +73,7 @@ The service also provides a gRPC interface with the following methods:
 - `CreateEvent`
 - `GetEventByID`
 - `StreamEventsFromSubject`
+- `GetHistoricEventsFromSubject`
 
 The gRPC service definition can be found in `eventsdb.proto`.
 
@@ -91,7 +92,7 @@ Authorization: Bearer <token>
   "source": "string",
   "type": "string",
   "subject": "string",
-  "data": "data"
+  "data": "base64_encoded_data"
 }
 ```
 
@@ -105,9 +106,20 @@ Authorization: Bearer <token>
 #### Stream Events
 
 ```http
-GET /events/stream?subject=<subject>
+GET /events/stream?subject=<subject>&from_id=<optional_event_id>
 Authorization: Bearer <token>
 ```
+
+Streams events for a given subject using Server-Sent Events (SSE). The `from_id` parameter is optional and allows you to start streaming from a specific event ID. The `has_more` field is always `true` when using the stream endpoint.
+
+#### Get Historic Events
+
+```http
+GET /events/historic?subject=<subject>&from_id=<optional_event_id>
+Authorization: Bearer <token>
+```
+
+Returns the same events as the stream endpoint but in a paginated format without streaming. The `from_id` parameter is optional and allows you to start from a specific event ID. The response includes a `has_more` field indicating if there are more events available. This endpoint is useful when you need to fetch historic events in batches rather than streaming them in real-time.
 
 ## Configuration
 

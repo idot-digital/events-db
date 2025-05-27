@@ -6,7 +6,8 @@ service EventsDB {
   // Sends a greeting
   rpc CreateEvent (CreateEventRequest) returns (CreateEventReply) {}
   rpc GetEventByID (GetEventByIDRequest) returns (Event) {}
-  rpc StreamEventsFromSubject (StreamEventsFromSubjectRequest) returns (stream StreamEventsFromSubjectReply) {}
+  rpc StreamEventsFromSubject (EventsFromSubjectRequest) returns (stream EventsFromSubjectReply) {}
+  rpc GetHistoricEventsFromSubject (EventsFromSubjectRequest) returns (EventsFromSubjectReply) {}
 }
 
 // The request message containing the user's name.
@@ -35,14 +36,15 @@ message Event {
   bytes data = 6;
 }
 
-message StreamEventsFromSubjectRequest {
+message EventsFromSubjectRequest {
   string subject = 1;
   optional int64 from_id = 2;
   // optional string type = 3;
   // optional bool recursive = 4;
 }
 
-message StreamEventsFromSubjectReply {
+message EventsFromSubjectReply {
   repeated Event events = 1;
+  bool has_more = 2;
 }
 

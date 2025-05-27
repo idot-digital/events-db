@@ -19,6 +19,9 @@ console.log(`Got event with ID: ${event.id}: ${JSON.stringify(event)}`);
 
 const unsubscribe = client.streamEventsFromSubject(
   "subject",
+  {
+    fromId: 6,
+  },
   (event) => {
     console.log(
       `Received event: ${event.id}: ${JSON.stringify({
@@ -34,7 +37,23 @@ const unsubscribe = client.streamEventsFromSubject(
   (error) => console.error(error)
 );
 
-setTimeout(() => {
+setTimeout(async () => {
   unsubscribe();
   console.log("Subscription cancelled");
+
+  const historicEvents = await client.getHistoricEventsFromSubject("subject", {
+    fromId: 6,
+  });
+  console.log(
+    `Got ${historicEvents.events.length} historic events: ${JSON.stringify(
+      historicEvents.events.map((e) => ({
+        id: e.id,
+        source: e.source,
+        type: e.type,
+        subject: e.subject,
+        time: e.time,
+        data: Buffer.from(e.data).toString(),
+      }))
+    )}`
+  );
 }, 1000);

@@ -3,6 +3,8 @@ import {
   CreateEventRequest,
   CreateEventResponse,
   EventsDBClientConfig,
+  EventsFromSubjectReply,
+  GetHistoricEventsFromSubjectInternalReply,
 } from "./types";
 
 import { EventSource } from "eventsource";
@@ -78,12 +80,17 @@ export class EventsDBClient {
    */
   streamEventsFromSubject(
     subject: string,
+    options: {
+      fromId?: number;
+    } = {},
     onEvent: (event: Event) => void,
     onError: (error: Error) => void
   ): () => void {
-    const url = `${this.address}/events/stream?subject=${encodeURIComponent(
-      subject
-    )}`;
+    const url = new URL(`${this.address}/events/stream`);
+    url.searchParams.set("subject", subject);
+    if (options.fromId) {
+      url.searchParams.set("from_id", options.fromId.toString());
+    }
     const eventSource = new EventSource(url);
 
     eventSource.onmessage = (message) => {
@@ -113,5 +120,37 @@ export class EventsDBClient {
     };
 
     return () => eventSource.close();
+  }
+
+  async getHistoricEventsFromSubject(
+    subject: string,
+    options: {
+      fromId?: number;
+    } = {}
+  ): Promise<EventsFromSubjectReply> {
+    const url = new URL(`${this.address}/events/historic`);
+    url.searchParams.set("subject", subject);
+    if (options.fromId) {
+      url.searchParams.set("from_id", options.fromId.toString());
+    }
+    const response = (await fetch(url, {
+      method: "GET",
+      headers: this.headers,
+    }).then((response) =>
+      response.json()
+    )) as GetHistoricEventsFromSubjectInternalReply;
+
+    const result: EventsFromSubjectReply = {
+      events: response.events.map((e) => ({
+        id: e.id,
+        source: e.source,
+        type: e.type,
+        subject: e.subject,
+        time: e.time,
+        data: Buffer.from(e.data, "base64"),
+      })),
+      has_more: response.has_more,
+    };
+    return result;
   }
 }

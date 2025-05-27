@@ -1,5 +1,6 @@
 # TODO
 
+- [ ] Add type and recursive to StreamEventsFromSubjectRequest
 - [ ] WebUI
   - [ ] Login Page
   - [ ] Subjects List

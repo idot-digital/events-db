@@ -116,6 +116,7 @@ func main() {
 	mux.HandleFunc("/events", middleware.Auth(middleware.Metrics(httpHandlers.CreateEventHandler, "create_event"), cfg.AuthToken))
 	mux.HandleFunc("/events/get", middleware.Auth(middleware.Metrics(httpHandlers.GetEventByIDHandler, "get_event"), cfg.AuthToken))
 	mux.HandleFunc("/events/stream", middleware.Auth(middleware.Metrics(httpHandlers.StreamEventsFromSubjectHandler, "stream_events"), cfg.AuthToken))
+	mux.HandleFunc("/events/historic", middleware.Auth(middleware.Metrics(httpHandlers.GetHistoricEventsFromSubject, "get_historic_events"), cfg.AuthToken))
 
 	// Wrap the mux with our logging middleware
 	handler := middleware.Logging(log, mux)
