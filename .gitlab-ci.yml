@@ -12,13 +12,12 @@ stages:
   - docker
   - release
 
-before_script:
-  - mkdir -p $GOPATH/bin
-  - export PATH="$PATH:$HOME/go/bin"
-  - go mod download
-
 .build_template: &build_definition
   stage: build
+  before_script:
+    - mkdir -p $GOPATH/bin
+    - export PATH="$PATH:$HOME/go/bin"
+    - go mod download
   script:
     - mkdir -p bin
     - make proto sqlc
