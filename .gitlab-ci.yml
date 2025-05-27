@@ -157,9 +157,8 @@ create_gitlab_release:
 
 create_github_release:
   stage: release
-  image: node:latest
+  image: serversideup/github-cli:latest
   before_script:
-    - npm install -g gh
     - echo $GITHUB_TOKEN | gh auth login --with-token
   script:
     - |
