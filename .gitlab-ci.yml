@@ -110,6 +110,8 @@ typescript-http-client:
   only:
     changes:
       - "client/typescript-http/**/*"
+  except:
+    - tags
 
 typescript-grpc-client:
   stage: build
@@ -125,6 +127,8 @@ typescript-grpc-client:
   only:
     changes:
       - "client/typescript-grpc/**/*"
+  except:
+    - tags
 
 release:
   stage: release
