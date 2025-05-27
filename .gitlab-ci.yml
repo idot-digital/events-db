@@ -159,7 +159,7 @@ create_github_release:
   stage: release
   image: serversideup/github-cli:latest
   before_script:
-    - echo $GITHUB_TOKEN | gh auth login --with-token
+    - echo $GITHUB_AUTH_TOKEN |gh auth login --with-token
   script:
     - |
       gh release create $CI_COMMIT_TAG \
@@ -181,5 +181,3 @@ create_github_release:
     - build_windows_arm64
   only:
     - tags
-  variables:
-    GITHUB_TOKEN: ${GITHUB_TOKEN}
