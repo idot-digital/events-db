@@ -1,0 +1,19 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@idot-digital/eventsdb-grpc-client": "^0.0.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4"
+  }
+}
