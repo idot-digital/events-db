@@ -107,6 +107,9 @@ typescript-http-client:
     - echo $'@idot-digital:registry=https://git.idot-digital.com/api/v4/packages/npm/\n//git.idot-digital.com/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
     - 'jq ''. + {"publishConfig": {"@idot-digital:registry": "https://git.idot-digital.com/api/v4/projects/104/packages/npm/"}}'' package.json > temp.json && mv temp.json package.json'
     - npm publish
+  only:
+    changes:
+      - "client/typescript-http/**/*"
 
 typescript-grpc-client:
   stage: build
@@ -119,6 +122,9 @@ typescript-grpc-client:
     - echo $'@idot-digital:registry=https://git.idot-digital.com/api/v4/packages/npm/\n//git.idot-digital.com/api/v4/projects/104/packages/npm/:_authToken="${CI_JOB_TOKEN}"' > .npmrc
     - 'jq ''. + {"publishConfig": {"@idot-digital:registry": "https://git.idot-digital.com/api/v4/projects/104/packages/npm/"}}'' package.json > temp.json && mv temp.json package.json'
     - npm publish
+  only:
+    changes:
+      - "client/typescript-grpc/**/*"
 
 release:
   stage: release
