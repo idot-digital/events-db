@@ -1,7 +1,3 @@
-FROM idotdigital/builder as cert-generator
-
-RUN openssl req -x509 -nodes -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -subj "/CN=localhost"
-
 FROM --platform=$BUILDPLATFORM alpine:latest as builder
 
 ARG TARGETPLATFORM
@@ -32,11 +28,6 @@ RUN apk add --no-cache ca-certificates tzdata
 
 # Copy the pre-built binary
 COPY --from=builder /app/eventsdb /app/eventsdb
-
-RUN mkdir -p /app/example
-COPY --from=cert-generator ./server.key /app/example/server.key
-COPY --from=cert-generator ./server.crt /app/example/server.crt
-RUN chmod 644 /app/example/server.key /app/example/server.crt
 
 # Copy schema and queries
 COPY schema.sql /app/schema.sql

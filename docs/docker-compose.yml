@@ -14,13 +14,14 @@ services:
       - MYSQL_DATABASE_NAME=root
       - LOG_LEVEL=DEBUG # Set to INFO in production.
       - AUTH_TOKEN=some-secret-token
-      - TLS_CERT_FILE=/app/example/server.crt #These certificates are only for quick testing. They are self-signed and should NEVER be used in production.
-      - TLS_KEY_FILE=/app/example/server.key #These certificates are only for quick testing. They are self-signed and should NEVER be used in production.
+      # - TLS_CERT_FILE=/app/tls/server.crt
+      # - TLS_KEY_FILE=/app/tls/server.key
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
       - ./config:/app/config
+      # - ./tls:/app/tls
     restart: unless-stopped
 
   mysql:
