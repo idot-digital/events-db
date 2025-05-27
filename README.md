@@ -43,8 +43,7 @@ The easiest way to run events-db is using Docker. Our example [`docker-compose.y
 
 ### Using Pre-built Binaries
 
-<!--
-The pre-built binaries can be found in the [releases page](https://github.com/idot-digital/events-db/releases). -->
+The pre-built binaries can be found in the [releases page](https://github.com/idot-digital/events-db/releases).
 
 We currently do not have pre-built binaries available. We are working on it!
 
