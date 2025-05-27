@@ -132,9 +132,9 @@ export class EventsDBClient {
   ): Observable<StreamEventsFromSubjectReply> {
     const request: StreamEventsFromSubjectRequest = {
       subject,
-      type: options.type,
       fromId: options.fromId,
-      recursive: options.recursive,
+      // type: options.type,
+      // recursive: options.recursive,
     };
     return this.client.StreamEventsFromSubject(request);
   }
