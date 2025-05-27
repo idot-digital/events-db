@@ -21,7 +21,7 @@ stages:
   script:
     - mkdir -p bin
     - make proto sqlc
-    - go build -o bin/eventsdb-$GOOS-$GOARCH cmd/server/main.go
+    - go build -o bin/eventsdb-$GOOS-$GOARCH$FILE_EXTENSION cmd/server/main.go
   artifacts:
     paths:
       - bin/
@@ -56,12 +56,14 @@ build_windows_amd64:
   variables:
     GOOS: windows
     GOARCH: amd64
+    FILE_EXTENSION: .exe
 
 build_windows_arm64:
   <<: *build_definition
   variables:
     GOOS: windows
     GOARCH: arm64
+    FILE_EXTENSION: .exe
 
 docker:
   stage: docker
@@ -129,21 +131,26 @@ typescript-grpc-client:
   except:
     - tags
 
-release:
+create_release:
   stage: release
-  image: alpine:latest
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
     - |
-      for os in linux darwin windows; do
-        for arch in amd64 arm64; do
-          if [ -f "bin/eventsdb-$os-$arch" ]; then
-            tar -czf "eventsdb-$os-$arch.tar.gz" -C bin "eventsdb-$os-$arch"
-          fi
-        done
-      done
-  artifacts:
-    paths:
-      - "*.tar.gz"
-    expire_in: 1 week
+      release-cli create --name "Release $CI_COMMIT_TAG" \
+        --tag-name $CI_COMMIT_TAG \
+        --description "Release created for $CI_COMMIT_TAG" \
+        --assets-link "{\"name\":\"eventsdb-linux-amd64\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-linux-amd64\"}" \
+        --assets-link "{\"name\":\"eventsdb-linux-arm64\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-linux-arm64\"}" \
+        --assets-link "{\"name\":\"eventsdb-darwin-amd64\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-darwin-amd64\"}" \
+        --assets-link "{\"name\":\"eventsdb-darwin-arm64\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-darwin-arm64\"}" \
+        --assets-link "{\"name\":\"eventsdb-windows-amd64.exe\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-windows-amd64.exe\"}" \
+        --assets-link "{\"name\":\"eventsdb-windows-arm64.exe\",\"url\":\"$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/bin/eventsdb-windows-arm64.exe\"}"
+  dependencies:
+    - build_linux_amd64
+    - build_linux_arm64
+    - build_darwin_amd64
+    - build_darwin_arm64
+    - build_windows_amd64
+    - build_windows_arm64
   only:
     - tags
