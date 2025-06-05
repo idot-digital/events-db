@@ -145,12 +145,12 @@ create_gitlab_release:
       release-cli create --name "Release $CI_COMMIT_TAG" \
         --tag-name $CI_COMMIT_TAG \
         --description "Docker image is available at dockerhub: idotdigital/eventsdb:$CI_COMMIT_TAG" \
-        --assets-link "{\"name\":\"eventsdb-linux-amd64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_linux_amd64\"}" \
-        --assets-link "{\"name\":\"eventsdb-linux-arm64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_linux_arm64\"}" \
-        --assets-link "{\"name\":\"eventsdb-darwin-amd64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_darwin_amd64\"}" \
-        --assets-link "{\"name\":\"eventsdb-darwin-arm64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_darwin_arm64\"}" \
-        --assets-link "{\"name\":\"eventsdb-windows-amd64.exe\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_windows_amd64\"}" \
-        --assets-link "{\"name\":\"eventsdb-windows-arm64.exe\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/v0.3/download?job=build_windows_arm64\"}"
+        --assets-link "{\"name\":\"eventsdb-linux-amd64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_linux_amd64\"}" \
+        --assets-link "{\"name\":\"eventsdb-linux-arm64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_linux_arm64\"}" \
+        --assets-link "{\"name\":\"eventsdb-darwin-amd64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_darwin_amd64\"}" \
+        --assets-link "{\"name\":\"eventsdb-darwin-arm64\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_darwin_arm64\"}" \
+        --assets-link "{\"name\":\"eventsdb-windows-amd64.exe\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_windows_amd64\"}" \
+        --assets-link "{\"name\":\"eventsdb-windows-arm64.exe\",\"url\":\"https://git.idot-digital.com/idot-digital/tools/events-db/-/jobs/artifacts/$CI_COMMIT_TAG/download?job=build_windows_arm64\"}"
   dependencies:
     - build_linux_amd64
     - build_linux_arm64
