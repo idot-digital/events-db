@@ -8,7 +8,6 @@ export interface Event {
 }
 
 export interface CreateEventRequest {
-  source: string;
   type: string;
   subject: string;
   data: Buffer;
@@ -20,6 +19,8 @@ export interface CreateEventResponse {
 
 export interface EventsDBClientConfig {
   address: string;
+  /** Source of the events. */
+  source: string;
   token?: string;
 }
 

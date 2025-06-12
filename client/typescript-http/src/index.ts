@@ -12,6 +12,7 @@ import { EventSource } from "eventsource";
 export class EventsDBClient {
   private address: string;
   private headers: HeadersInit;
+  private source: string;
 
   constructor(config: EventsDBClientConfig) {
     this.address = config.address;
@@ -19,6 +20,7 @@ export class EventsDBClient {
       "Content-Type": "application/json",
       ...(config.token ? { Authorization: `Bearer ${config.token}` } : {}),
     };
+    this.source = config.source;
   }
 
   /**
@@ -30,7 +32,7 @@ export class EventsDBClient {
       method: "POST",
       headers: this.headers,
       body: JSON.stringify({
-        source: request.source,
+        source: this.source,
         type: request.type,
         subject: request.subject,
         data: request.data.toString("base64"),

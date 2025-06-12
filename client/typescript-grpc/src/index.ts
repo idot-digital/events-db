@@ -1,6 +1,5 @@
 import {
   EventsDBClientImpl,
-  CreateEventRequest,
   GetEventByIDRequest,
   EventsFromSubjectRequest,
   Event,
@@ -12,15 +11,25 @@ import { Observable } from "rxjs";
 
 export interface EventsDBClientConfig {
   address: string;
+  /** Source of the events. */
+  source: string;
   token?: string;
   tlsCertFile?: string;
   tlsKeyFile?: string;
 }
 
+export interface CreateEventRequest {
+  type: string;
+  subject: string;
+  data: Uint8Array;
+}
+
 export class EventsDBClient {
   private client: EventsDBClientImpl;
+  private source: string;
 
   constructor(config: EventsDBClientConfig) {
+    this.source = config.source;
     // Create credentials based on TLS configuration
     let credentials: grpc.ChannelCredentials;
     if (config.tlsCertFile && config.tlsKeyFile) {
@@ -113,7 +122,10 @@ export class EventsDBClient {
   }
 
   async createEvent(request: CreateEventRequest): Promise<number> {
-    const response = await this.client.CreateEvent(request);
+    const response = await this.client.CreateEvent({
+      ...request,
+      source: this.source,
+    });
     return response.id;
   }
 

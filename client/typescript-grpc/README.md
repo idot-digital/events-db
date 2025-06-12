@@ -5,67 +5,59 @@ A Node.js TypeScript client for EventsDB. It uses the gRPC protocol to communica
 ## Installation
 
 ```bash
-npm install
-```
-
-## Building
-
-First, generate the TypeScript types from the proto file:
-
-```bash
-npm run generate
-```
-
-Then build the project:
-
-```bash
-npm run build
+npm install @idot-digital/eventsdb-grpc-client
 ```
 
 ## Usage
 
 ```typescript
-import { EventsDBClient } from "./dist";
+import { EventsDBClient } from "@idot-digital/eventsdb-grpc-client";
 
 // Create a client instance without authentication or TLS
 const client = new EventsDBClient({
   address: "localhost:50051",
+  source: "my-app",
 });
 
 // Create a client with authentication
 const clientWithAuth = new EventsDBClient({
   address: "localhost:50051",
+  source: "my-app",
   token: "your-auth-token",
 });
 
 // Create a client with both authentication and TLS
 const clientWithTLS = new EventsDBClient({
   address: "localhost:50051",
+  source: "my-app",
   token: "your-auth-token",
   tlsCertFile: "/path/to/cert.pem",
   tlsKeyFile: "/path/to/key.pem",
 });
 
 // Create an event
-const eventId = await client.createEvent(
-  "test-source",
-  "test-type",
-  "test-subject",
-  Buffer.from("test-data")
-);
+const eventId = await client.createEvent({
+  type: "user.login",
+  subject: "user-123",
+  data: Buffer.from(
+    '{"service": "my-app", "user_id": "user-123", "ip": "127.0.0.1"}'
+  ),
+});
 console.log("Created event with ID:", eventId);
 
 // Get an event
-const event = await client.getEventByID(1);
+const event = await client.getEventByID(eventId);
 console.log("Retrieved event:", event);
 
 // Stream events
-const stream = client.streamEventsFromSubject("test-subject", {
-  recursive: true,
+const stream = client.streamEventsFromSubject("user-123", {
+  fromId: 1,
 });
 stream.subscribe({
   next: (response) => {
-    console.log("Received events:", response.events);
+    response.events.forEach((event) => {
+      console.log("Received event:", event);
+    });
   },
   error: (error) => {
     console.error("Stream error:", error);
@@ -89,27 +81,30 @@ constructor(config: EventsDBClientConfig)
 Creates a new client instance. The config object accepts the following properties:
 
 - `address`: The server address in the format `host:port` (required)
+- `source`: The source identifier for events created by this client (required)
 - `token`: Authentication token (optional)
 - `tlsCertFile`: Path to TLS certificate file (optional)
 - `tlsKeyFile`: Path to TLS key file (optional)
 
 #### Methods
 
-##### `createEvent(source: string, type: string, subject: string, data: Buffer): Promise<number>`
+##### `createEvent(request: CreateEventRequest): Promise<number>`
 
-Creates a new event and returns its ID.
+Creates a new event and returns its ID. The request object should contain:
+
+- `type`: Event type (required)
+- `subject`: Event subject (required)
+- `data`: Event data as Uint8Array (required)
 
 ##### `getEventByID(id: number): Promise<Event>`
 
 Retrieves an event by its ID.
 
-##### `streamEventsFromSubject(subject: string, options?: { type?: string; fromId?: number; recursive?: boolean }): Observable<StreamEventsFromSubjectReply>`
+##### `streamEventsFromSubject(subject: string, options?: { fromId?: number }): Observable<StreamEventsFromSubjectReply>`
 
 Streams events for a given subject. The options parameter is optional and can include:
 
-- `type`: Filter events by type
 - `fromId`: Start streaming from a specific event ID
-- `recursive`: Whether to include events from child subjects
 
 ## Authentication
 
