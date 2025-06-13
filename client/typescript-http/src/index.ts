@@ -155,4 +155,37 @@ export class EventsDBClient {
     };
     return result;
   }
+
+  /**
+   * Delete events from a subject
+   * @param subject The subject to delete events from
+   * @param options Optional parameters including fromId
+   * @returns Promise<boolean> indicating success
+   */
+  async deleteFromSubject(
+    subject: string,
+    options: {
+      fromId?: number;
+    } = {}
+  ): Promise<boolean> {
+    const url = new URL(`${this.address}/subjects/delete`);
+    url.searchParams.set("subject", subject);
+    if (options.fromId) {
+      url.searchParams.set("from_id", options.fromId.toString());
+    }
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP error! status: ${response.status} ${await response.text()}`
+      );
+    }
+
+    const result = await response.json();
+    return result.status === "ok";
+  }
 }

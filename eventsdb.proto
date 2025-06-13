@@ -8,6 +8,7 @@ service EventsDB {
   rpc GetEventByID (GetEventByIDRequest) returns (Event) {}
   rpc StreamEventsFromSubject (EventsFromSubjectRequest) returns (stream EventsFromSubjectReply) {}
   rpc GetHistoricEventsFromSubject (EventsFromSubjectRequest) returns (EventsFromSubjectReply) {}
+  rpc DeleteFromSubject (EventsFromSubjectRequest) returns (OkReply) {}
 }
 
 // The request message containing the user's name.
@@ -46,5 +47,9 @@ message EventsFromSubjectRequest {
 message EventsFromSubjectReply {
   repeated Event events = 1;
   bool has_more = 2;
+}
+
+message OkReply {
+  bool ok = 1;
 }
 

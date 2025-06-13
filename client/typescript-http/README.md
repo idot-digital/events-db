@@ -30,6 +30,16 @@ const eventId = await client.createEvent({
 // Get an event by ID
 const retrievedEvent = await client.getEventByID(eventId);
 
+// Get historic events for a subject
+const historicEvents = await client.getHistoricEventsFromSubject("user-123", {
+  fromId: 1,
+});
+
+// Delete events from a subject
+const success = await client.deleteFromSubject("user-123", {
+  fromId: 100, // Delete events with ID >= 100
+});
+
 // Stream events for a subject
 const stopStream = client.streamEventsFromSubject(
   "user-123",
@@ -80,13 +90,32 @@ Retrieves an event by its ID. Returns an Event object with:
 - `time`: Event timestamp
 - `data`: Event data as Uint8Array
 
-##### `streamEventsFromSubject(subject: string, onEvent: (event: Event) => void, onError: (error: Error) => void): () => void`
+##### `streamEventsFromSubject(subject: string, options: { fromId?: number }, onEvent: (event: Event) => void, onError: (error: Error) => void): () => void`
 
 Streams events for a given subject using Server-Sent Events. Returns a function to stop the stream.
 
 - `subject`: The subject to stream events for
+- `options`: Optional parameters including `fromId` to start from a specific event ID
 - `onEvent`: Callback function called for each received event
 - `onError`: Callback function called when an error occurs
+
+##### `getHistoricEventsFromSubject(subject: string, options?: { fromId?: number }): Promise<EventsFromSubjectReply>`
+
+Retrieves historic events for a given subject in a paginated format.
+
+- `subject`: The subject to get events for
+- `options`: Optional parameters including `fromId` to start from a specific event ID
+
+Returns an object with `events` array and `has_more` boolean indicating if more events are available.
+
+##### `deleteFromSubject(subject: string, options?: { fromId?: number }): Promise<boolean>`
+
+Deletes events from a given subject.
+
+- `subject`: The subject to delete events from
+- `options`: Optional parameters including `fromId` to delete events with ID >= this value (defaults to 0)
+
+Returns `true` on successful deletion.
 
 ## Authentication
 

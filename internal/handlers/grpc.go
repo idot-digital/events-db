@@ -213,3 +213,24 @@ func (h *GRPCHandlers) GetHistoricEventsFromSubject(ctx context.Context, req *pb
 		HasMore: len(events) == int(h.streamBatchSize),
 	}, nil
 }
+
+func (h *GRPCHandlers) DeleteFromSubject(ctx context.Context, req *pb.EventsFromSubjectRequest) (*pb.OkReply, error) {
+	var ID int64
+	if req.FromId != nil {
+		ID = *req.FromId
+	} else {
+		ID = 0
+	}
+
+	if err := h.server.GetQueries().DeleteFromSubject(ctx, database.DeleteFromSubjectParams{
+		Subject: req.Subject,
+		ID:      ID,
+	}); err != nil {
+		h.server.GetLogger().Error("Failed to delete events", "subject", req.Subject, "error", err)
+		return nil, status.Error(codes.Internal, "Failed to delete events")
+	}
+
+	return &pb.OkReply{
+		Ok: true,
+	}, nil
+}

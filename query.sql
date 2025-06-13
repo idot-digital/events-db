@@ -62,3 +62,9 @@ SELECT
   DISTINCT `subject`
 FROM
   events;
+
+-- name: DeleteFromSubject :exec
+DELETE FROM
+  events
+WHERE
+  `subject` = ? AND `id` >= ?;

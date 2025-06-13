@@ -349,3 +349,40 @@ func (h *HTTPHandlers) GetSubjectsHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(subjects)
 }
+
+func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	subject := r.URL.Query().Get("subject")
+	if subject == "" {
+		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
+		return
+	}
+	fromIDStr := r.URL.Query().Get("from_id")
+	var ID int64
+	if fromIDStr != "" {
+		var err error
+		ID, err = strconv.ParseInt(fromIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid from_id parameter", http.StatusBadRequest)
+			return
+		}
+	} else {
+		ID = 0
+	}
+
+	err := h.server.GetQueries().DeleteFromSubject(r.Context(), database.DeleteFromSubjectParams{
+		Subject: subject,
+		ID:      ID,
+	})
+	if err != nil {
+		h.server.GetLogger().Error("Failed to delete events from subject", "subject", subject, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}

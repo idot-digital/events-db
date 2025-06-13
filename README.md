@@ -74,6 +74,7 @@ The service also provides a gRPC interface with the following methods:
 - `GetEventByID`
 - `StreamEventsFromSubject`
 - `GetHistoricEventsFromSubject`
+- `DeleteFromSubject`
 
 The gRPC service definition can be found in `eventsdb.proto`.
 
@@ -120,6 +121,15 @@ Authorization: Bearer <token>
 ```
 
 Returns the same events as the stream endpoint but in a paginated format without streaming. The `from_id` parameter is optional and allows you to start from a specific event ID. The response includes a `has_more` field indicating if there are more events available. This endpoint is useful when you need to fetch historic events in batches rather than streaming them in real-time.
+
+#### Delete Events from Subject
+
+```http
+POST /subjects/delete?subject=<subject>&from_id=<optional_event_id>
+Authorization: Bearer <token>
+```
+
+Deletes events from a specified subject. The `from_id` parameter is optional and allows you to delete events with ID greater than or equal to the specified value. If `from_id` is not provided, it defaults to 0 (which means no events will be deleted since event IDs start from 1). Returns a JSON response with `{"status": "ok"}` on success.
 
 ## Configuration
 

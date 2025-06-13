@@ -71,6 +71,14 @@ components:
           format: int64
           description: ID of the created event
 
+    DeleteResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["ok"]
+          description: Status of the delete operation
+
 paths:
   /events:
     post:
@@ -152,6 +160,39 @@ paths:
           description: Unauthorized - Invalid or missing token
         "429":
           description: Too many clients for this subject
+        "500":
+          description: Internal server error
+
+  /subjects/delete:
+    post:
+      summary: Delete events from a subject
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subject
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Subject to delete events from
+        - name: from_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Delete events with ID greater than or equal to this value (optional, defaults to 0)
+      responses:
+        "200":
+          description: Events deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResponse"
+        "400":
+          description: Missing subject parameter or invalid from_id
+        "401":
+          description: Unauthorized - Invalid or missing token
         "500":
           description: Internal server error
 

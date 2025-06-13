@@ -49,6 +49,12 @@ console.log("Created event with ID:", eventId);
 const event = await client.getEventByID(eventId);
 console.log("Retrieved event:", event);
 
+// Delete events from a subject
+const success = await client.deleteFromSubject("user-123", {
+  fromId: 100, // Delete events with ID >= 100
+});
+console.log("Delete operation success:", success);
+
 // Stream events
 const stream = client.streamEventsFromSubject("user-123", {
   fromId: 1,
@@ -105,6 +111,20 @@ Retrieves an event by its ID.
 Streams events for a given subject. The options parameter is optional and can include:
 
 - `fromId`: Start streaming from a specific event ID
+
+##### `getHistoricEventsFromSubject(subject: string, options?: { fromId?: number }): Promise<EventsFromSubjectReply>`
+
+Retrieves historic events for a given subject. The options parameter is optional and can include:
+
+- `fromId`: Start from a specific event ID
+
+##### `deleteFromSubject(subject: string, options?: { fromId?: number }): Promise<boolean>`
+
+Deletes events from a given subject. The options parameter is optional and can include:
+
+- `fromId`: Delete events with ID greater than or equal to this value (defaults to 0 if not provided)
+
+Returns `true` on successful deletion.
 
 ## Authentication
 

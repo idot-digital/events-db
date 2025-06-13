@@ -35,7 +35,8 @@ make build-ts-http-client   # Build TypeScript HTTP client
 
 ### Development
 ```bash
-./events-db --grpc-port=50051 --rest-port=8080  # Run server
+make run-db                                      # Run server directly with go run
+./bin/eventsdb --grpc-port=50051 --rest-port=8080  # Run built binary
 ```
 
 ## Key Architecture Patterns
@@ -73,4 +74,9 @@ The server accepts both environment variables and command-line flags:
 
 ## Testing
 
-No specific test commands found in Makefile. Check for Go test files when adding test functionality.
+No test files currently exist in the codebase. Use standard Go testing commands:
+```bash
+go test ./...           # Run all tests
+go test -v ./...        # Run tests with verbose output
+go test ./internal/...  # Run tests for specific package
+```

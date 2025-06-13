@@ -4,6 +4,7 @@ import {
   EventsFromSubjectRequest,
   Event,
   EventsFromSubjectReply,
+  OkReply,
 } from "../gen/eventsdb";
 import * as grpc from "@grpc/grpc-js";
 import * as fs from "fs";
@@ -164,5 +165,19 @@ export class EventsDBClient {
       fromId: options.fromId ?? undefined,
     };
     return this.client.GetHistoricEventsFromSubject(request);
+  }
+
+  async deleteFromSubject(
+    subject: string,
+    options: {
+      fromId?: number;
+    } = {}
+  ): Promise<boolean> {
+    const request: EventsFromSubjectRequest = {
+      subject,
+      fromId: options.fromId ?? undefined,
+    };
+    const response = await this.client.DeleteFromSubject(request);
+    return response.ok;
   }
 }
