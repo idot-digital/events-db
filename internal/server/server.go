@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/idot-digital/events-db/database"
@@ -11,6 +12,52 @@ import (
 	"github.com/idot-digital/events-db/internal/metrics"
 	"github.com/idot-digital/events-db/internal/models"
 )
+
+// EventFilter defines criteria for filtering events
+type EventFilter struct {
+	Subject   string
+	Type      *string // Optional type filter
+	Recursive bool    // Whether to match subject prefixes
+}
+
+// FilteredListener represents a listener with its filter criteria
+type FilteredListener struct {
+	Channel chan *models.Event
+	Filter  EventFilter
+}
+
+// MatchesEvent checks if an event matches the filter criteria
+func (f *EventFilter) MatchesEvent(event *models.Event) bool {
+	// Special case: empty subject matches all events (for backward compatibility)
+	if f.Subject == "" {
+		// Check type matching if specified
+		if f.Type != nil && event.Type != *f.Type {
+			return false
+		}
+		return true
+	}
+	
+	// Check subject matching
+	subjectMatches := false
+	if f.Recursive {
+		// Recursive: check if event subject starts with filter subject
+		subjectMatches = strings.HasPrefix(event.Subject, f.Subject)
+	} else {
+		// Exact match
+		subjectMatches = event.Subject == f.Subject
+	}
+	
+	if !subjectMatches {
+		return false
+	}
+	
+	// Check type matching if specified
+	if f.Type != nil && event.Type != *f.Type {
+		return false
+	}
+	
+	return true
+}
 
 // Server is used to implement both gRPC and REST servers
 type Server struct {
@@ -33,7 +80,15 @@ func New(queries *database.Queries, bufferSize int, maxTotalClients int, clientB
 	go func() {
 		for event := range emitterChannel {
 			for listener := listeners.Front(); listener != nil; listener = listener.Next() {
-				listener.Value.(chan *models.Event) <- event
+				filteredListener := listener.Value.(*FilteredListener)
+				if filteredListener.Filter.MatchesEvent(event) {
+					select {
+					case filteredListener.Channel <- event:
+					default:
+						// Channel is full, skip this event to prevent blocking
+						logger.Warn("Client channel full, dropping event", "subject", event.Subject, "event_id", event.ID)
+					}
+				}
 			}
 		}
 		fmt.Println("Channel closed, reader exiting.")
@@ -60,6 +115,15 @@ func (s *Server) GetQueries() *database.Queries {
 }
 
 func (s *Server) AttachListener() (chan *models.Event, *list.Element, error) {
+	// For backward compatibility, create a filter that matches all events
+	return s.AttachFilteredListener(EventFilter{
+		Subject:   "",
+		Type:      nil,
+		Recursive: true, // Match all subjects
+	})
+}
+
+func (s *Server) AttachFilteredListener(filter EventFilter) (chan *models.Event, *list.Element, error) {
 	s.clientsMutex.Lock()
 	defer s.clientsMutex.Unlock()
 
@@ -69,7 +133,11 @@ func (s *Server) AttachListener() (chan *models.Event, *list.Element, error) {
 
 	s.listenerIdCounter += 1
 	channel := make(chan *models.Event, s.clientBufferSize)
-	elmt := s.eventListeners.PushBack(channel)
+	filteredListener := &FilteredListener{
+		Channel: channel,
+		Filter:  filter,
+	}
+	elmt := s.eventListeners.PushBack(filteredListener)
 	s.totalClients++
 
 	// Update active streams metric

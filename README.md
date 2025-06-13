@@ -7,6 +7,8 @@ A high-performance event storage and streaming service that supports both HTTP a
 - Event storage and retrieval
 - Real-time event streaming using Server-Sent Events (SSE)
 - Dual interface support (HTTP REST and gRPC)
+- Subject-based filtering with recursive support
+- Event type filtering
 - Authentication support
 - Prometheus metrics
 - TLS support
@@ -107,29 +109,47 @@ Authorization: Bearer <token>
 #### Stream Events
 
 ```http
-GET /events/stream?subject=<subject>&from_id=<optional_event_id>
+GET /events/stream?subject=<subject>&from_id=<optional_event_id>&type=<optional_type>&recursive=<true|false>
 Authorization: Bearer <token>
 ```
 
-Streams events for a given subject using Server-Sent Events (SSE). The `from_id` parameter is optional and allows you to start streaming from a specific event ID. The `has_more` field is always `true` when using the stream endpoint.
+Streams events for a given subject using Server-Sent Events (SSE). Parameters:
+- `subject` (required): The subject to filter events by
+- `from_id` (optional): Start streaming from a specific event ID
+- `type` (optional): Filter events by specific type
+- `recursive` (optional): When `true`, matches subjects that start with the given subject (e.g., "test" matches "test", "test/1", "test/sub/path")
+
+The `has_more` field is always `true` when using the stream endpoint.
 
 #### Get Historic Events
 
 ```http
-GET /events/historic?subject=<subject>&from_id=<optional_event_id>
+GET /events/historic?subject=<subject>&from_id=<optional_event_id>&type=<optional_type>&recursive=<true|false>
 Authorization: Bearer <token>
 ```
 
-Returns the same events as the stream endpoint but in a paginated format without streaming. The `from_id` parameter is optional and allows you to start from a specific event ID. The response includes a `has_more` field indicating if there are more events available. This endpoint is useful when you need to fetch historic events in batches rather than streaming them in real-time.
+Returns the same events as the stream endpoint but in a paginated format without streaming. Parameters:
+- `subject` (required): The subject to filter events by
+- `from_id` (optional): Start from a specific event ID
+- `type` (optional): Filter events by specific type
+- `recursive` (optional): When `true`, matches subjects that start with the given subject
+
+The response includes a `has_more` field indicating if there are more events available. This endpoint is useful when you need to fetch historic events in batches rather than streaming them in real-time.
 
 #### Delete Events from Subject
 
 ```http
-POST /subjects/delete?subject=<subject>&from_id=<optional_event_id>
+POST /subjects/delete?subject=<subject>&from_id=<optional_event_id>&type=<optional_type>&recursive=<true|false>
 Authorization: Bearer <token>
 ```
 
-Deletes events from a specified subject. The `from_id` parameter is optional and allows you to delete events with ID greater than or equal to the specified value. If `from_id` is not provided, it defaults to 0 (which means no events will be deleted since event IDs start from 1). Returns a JSON response with `{"status": "ok"}` on success.
+Deletes events from a specified subject. Parameters:
+- `subject` (required): The subject to delete events from
+- `from_id` (optional): Delete events with ID greater than or equal to the specified value (defaults to 0)
+- `type` (optional): Only delete events of the specified type
+- `recursive` (optional): When `true`, deletes events from subjects that start with the given subject
+
+Returns a JSON response with `{"status": "ok"}` on success.
 
 ## Configuration
 
@@ -164,12 +184,14 @@ CREATE TABLE events (
   source VARCHAR(255) NOT NULL,
   type VARCHAR(255) NOT NULL,
   subject VARCHAR(255) NOT NULL,
-  data BLOB NOT NULL,
-  time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_subject (subject),
-  FULLTEXT INDEX idx_subject_ft (subject)
-);
+  time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  data VARBINARY(60000) NOT NULL,
+  INDEX idx_subject_id (subject, id),
+  INDEX idx_subject_type_id (subject, type, id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
+
+The composite indexes are optimized for the query patterns used in subject-based filtering and type filtering operations.
 
 ## Metrics
 

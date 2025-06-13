@@ -139,15 +139,15 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
-      // type?: string;
-      // recursive?: boolean;
+      type?: string;
+      recursive?: boolean;
     } = {}
   ): Observable<EventsFromSubjectReply> {
     const request: EventsFromSubjectRequest = {
       subject,
       fromId: options.fromId,
-      // type: options.type,
-      // recursive: options.recursive,
+      type: options.type,
+      recursive: options.recursive,
     };
     return this.client.StreamEventsFromSubject(request);
   }
@@ -156,13 +156,15 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
-      // type?: string;
-      // recursive?: boolean;
+      type?: string;
+      recursive?: boolean;
     } = {}
   ): Promise<EventsFromSubjectReply> {
     const request: EventsFromSubjectRequest = {
       subject,
       fromId: options.fromId ?? undefined,
+      type: options.type,
+      recursive: options.recursive,
     };
     return this.client.GetHistoricEventsFromSubject(request);
   }
@@ -171,11 +173,15 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
+      type?: string;
+      recursive?: boolean;
     } = {}
   ): Promise<boolean> {
     const request: EventsFromSubjectRequest = {
       subject,
       fromId: options.fromId ?? undefined,
+      type: options.type,
+      recursive: options.recursive,
     };
     const response = await this.client.DeleteFromSubject(request);
     return response.ok;

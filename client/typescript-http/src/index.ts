@@ -84,6 +84,8 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
+      type?: string;
+      recursive?: boolean;
     } = {},
     onEvent: (event: Event) => void,
     onError: (error: Error) => void
@@ -92,6 +94,12 @@ export class EventsDBClient {
     url.searchParams.set("subject", subject);
     if (options.fromId) {
       url.searchParams.set("from_id", options.fromId.toString());
+    }
+    if (options.type) {
+      url.searchParams.set("type", options.type);
+    }
+    if (options.recursive) {
+      url.searchParams.set("recursive", "true");
     }
     const eventSource = new EventSource(url);
 
@@ -128,12 +136,20 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
+      type?: string;
+      recursive?: boolean;
     } = {}
   ): Promise<EventsFromSubjectReply> {
     const url = new URL(`${this.address}/events/historic`);
     url.searchParams.set("subject", subject);
     if (options.fromId) {
       url.searchParams.set("from_id", options.fromId.toString());
+    }
+    if (options.type) {
+      url.searchParams.set("type", options.type);
+    }
+    if (options.recursive) {
+      url.searchParams.set("recursive", "true");
     }
     const response = (await fetch(url, {
       method: "GET",
@@ -166,12 +182,20 @@ export class EventsDBClient {
     subject: string,
     options: {
       fromId?: number;
+      type?: string;
+      recursive?: boolean;
     } = {}
   ): Promise<boolean> {
     const url = new URL(`${this.address}/subjects/delete`);
     url.searchParams.set("subject", subject);
     if (options.fromId) {
       url.searchParams.set("from_id", options.fromId.toString());
+    }
+    if (options.type) {
+      url.searchParams.set("type", options.type);
+    }
+    if (options.recursive) {
+      url.searchParams.set("recursive", "true");
     }
 
     const response = await fetch(url, {

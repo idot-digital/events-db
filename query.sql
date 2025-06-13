@@ -31,7 +31,7 @@ FROM
   events
 WHERE
   `id` > ?
-  AND MATCH(`subject`) AGAINST (? IN BOOLEAN MODE)
+  AND `subject` LIKE ?
 LIMIT 50;
 
 -- name: GetEventsBySubjectAndType :many
@@ -52,8 +52,8 @@ FROM
   events
 WHERE
   `id` > ?
-  AND MATCH(`subject`) AGAINST ($2 IN BOOLEAN MODE)
-  AND `type` = $3
+  AND `subject` LIKE ?
+  AND `type` = ?
 LIMIT 50;
 
 
@@ -68,3 +68,21 @@ DELETE FROM
   events
 WHERE
   `subject` = ? AND `id` >= ?;
+
+-- name: DeleteFromSubjectRecursive :exec
+DELETE FROM
+  events
+WHERE
+  `subject` LIKE ? AND `id` >= ?;
+
+-- name: DeleteFromSubjectWithType :exec
+DELETE FROM
+  events
+WHERE
+  `subject` = ? AND `type` = ? AND `id` >= ?;
+
+-- name: DeleteFromSubjectRecursiveWithType :exec
+DELETE FROM
+  events
+WHERE
+  `subject` LIKE ? AND `type` = ? AND `id` >= ?;

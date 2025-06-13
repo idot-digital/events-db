@@ -153,7 +153,7 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
 		return
 	}
-	// eventType := r.URL.Query().Get("type")
+	eventType := r.URL.Query().Get("type")
 	lastID := int64(0)
 	fromIDStr := r.URL.Query().Get("from_id")
 	if fromIDStr != "" {
@@ -164,10 +164,10 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		}
 		lastID = fromID
 	}
-	// recursive := false
-	// if r.URL.Query().Get("recursive") == "true" {
-	// 	recursive = true
-	// }
+	recursive := false
+	if r.URL.Query().Get("recursive") == "true" {
+		recursive = true
+	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -177,11 +177,40 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	clientGone := w.(http.CloseNotifier).CloseNotify()
 
 	for {
-		events, err := h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
-			Subject: subject,
-			Limit:   h.streamBatchSize,
-			ID:      lastID,
-		})
+		var events []database.Event
+		var err error
+		
+		// Determine which query to use based on recursive and type parameters
+		if recursive {
+			subjectPattern := subject + "%"
+			if eventType != "" {
+				events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(r.Context(), database.GetEventsBySubjectPrefixAndTypeParams{
+					ID:      lastID,
+					Subject: subjectPattern,
+					Type:    eventType,
+				})
+			} else {
+				events, err = h.server.GetQueries().GetEventsBySubjectPrefix(r.Context(), database.GetEventsBySubjectPrefixParams{
+					ID:      lastID,
+					Subject: subjectPattern,
+				})
+			}
+		} else {
+			if eventType != "" {
+				events, err = h.server.GetQueries().GetEventsBySubjectAndType(r.Context(), database.GetEventsBySubjectAndTypeParams{
+					ID:      lastID,
+					Subject: subject,
+					Type:    eventType,
+				})
+			} else {
+				events, err = h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
+					Subject: subject,
+					Limit:   h.streamBatchSize,
+					ID:      lastID,
+				})
+			}
+		}
+		
 		if err != nil {
 			h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -221,7 +250,19 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 		}
 	}
 
-	channel, listener, err := h.server.AttachListener()
+	// Create filter based on request parameters
+	var eventTypePtr *string
+	if eventType != "" {
+		eventTypePtr = &eventType
+	}
+	
+	filter := server.EventFilter{
+		Subject:   subject,
+		Type:      eventTypePtr,
+		Recursive: recursive,
+	}
+	
+	channel, listener, err := h.server.AttachFilteredListener(filter)
 	if err != nil {
 		h.server.GetLogger().Error("Failed to attach listener", "subject", subject, "error", err)
 		http.Error(w, "Too many clients for this subject", http.StatusTooManyRequests)
@@ -232,7 +273,7 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	for {
 		select {
 		case event := <-channel:
-			if event.Subject == subject && event.ID > lastID {
+			if event.ID > lastID {
 				eventJSON, err := json.Marshal(HTTPEvent{
 					ID:      event.ID,
 					Source:  event.Source,
@@ -268,7 +309,7 @@ func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *ht
 		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
 		return
 	}
-	// eventType := r.URL.Query().Get("type")
+	eventType := r.URL.Query().Get("type")
 	lastID := int64(0)
 	fromIDStr := r.URL.Query().Get("from_id")
 	if fromIDStr != "" {
@@ -279,19 +320,48 @@ func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *ht
 		}
 		lastID = fromID
 	}
-	// recursive := false
-	// if r.URL.Query().Get("recursive") == "true" {
-	// 	recursive = true
-	// }
+	recursive := false
+	if r.URL.Query().Get("recursive") == "true" {
+		recursive = true
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	events, err := h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
-		Subject: subject,
-		Limit:   h.streamBatchSize,
-		ID:      lastID,
-	})
+	var events []database.Event
+	var err error
+	
+	// Determine which query to use based on recursive and type parameters
+	if recursive {
+		subjectPattern := subject + "%"
+		if eventType != "" {
+			events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(r.Context(), database.GetEventsBySubjectPrefixAndTypeParams{
+				ID:      lastID,
+				Subject: subjectPattern,
+				Type:    eventType,
+			})
+		} else {
+			events, err = h.server.GetQueries().GetEventsBySubjectPrefix(r.Context(), database.GetEventsBySubjectPrefixParams{
+				ID:      lastID,
+				Subject: subjectPattern,
+			})
+		}
+	} else {
+		if eventType != "" {
+			events, err = h.server.GetQueries().GetEventsBySubjectAndType(r.Context(), database.GetEventsBySubjectAndTypeParams{
+				ID:      lastID,
+				Subject: subject,
+				Type:    eventType,
+			})
+		} else {
+			events, err = h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
+				Subject: subject,
+				Limit:   h.streamBatchSize,
+				ID:      lastID,
+			})
+		}
+	}
+	
 	if err != nil {
 		h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -360,6 +430,7 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Missing subject parameter", http.StatusBadRequest)
 		return
 	}
+	eventType := r.URL.Query().Get("type")
 	fromIDStr := r.URL.Query().Get("from_id")
 	var ID int64
 	if fromIDStr != "" {
@@ -372,11 +443,43 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 	} else {
 		ID = 0
 	}
+	recursive := false
+	if r.URL.Query().Get("recursive") == "true" {
+		recursive = true
+	}
 
-	err := h.server.GetQueries().DeleteFromSubject(r.Context(), database.DeleteFromSubjectParams{
-		Subject: subject,
-		ID:      ID,
-	})
+	var err error
+	
+	// Determine which delete query to use based on recursive and type parameters
+	if recursive {
+		subjectPattern := subject + "%"
+		if eventType != "" {
+			err = h.server.GetQueries().DeleteFromSubjectRecursiveWithType(r.Context(), database.DeleteFromSubjectRecursiveWithTypeParams{
+				Subject: subjectPattern,
+				Type:    eventType,
+				ID:      ID,
+			})
+		} else {
+			err = h.server.GetQueries().DeleteFromSubjectRecursive(r.Context(), database.DeleteFromSubjectRecursiveParams{
+				Subject: subjectPattern,
+				ID:      ID,
+			})
+		}
+	} else {
+		if eventType != "" {
+			err = h.server.GetQueries().DeleteFromSubjectWithType(r.Context(), database.DeleteFromSubjectWithTypeParams{
+				Subject: subject,
+				Type:    eventType,
+				ID:      ID,
+			})
+		} else {
+			err = h.server.GetQueries().DeleteFromSubject(r.Context(), database.DeleteFromSubjectParams{
+				Subject: subject,
+				ID:      ID,
+			})
+		}
+	}
+	
 	if err != nil {
 		h.server.GetLogger().Error("Failed to delete events from subject", "subject", subject, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

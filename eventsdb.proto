@@ -40,8 +40,8 @@ message Event {
 message EventsFromSubjectRequest {
   string subject = 1;
   optional int64 from_id = 2;
-  // optional string type = 3;
-  // optional bool recursive = 4;
+  optional string type = 3;
+  optional bool recursive = 4;
 }
 
 message EventsFromSubjectReply {

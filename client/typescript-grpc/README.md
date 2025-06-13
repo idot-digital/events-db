@@ -55,6 +55,17 @@ const success = await client.deleteFromSubject("user-123", {
 });
 console.log("Delete operation success:", success);
 
+// Delete events recursively (from subjects starting with "user-")
+const recursiveSuccess = await client.deleteFromSubject("user-", {
+  fromId: 0,
+  recursive: true, // Deletes from "user-123", "user-456", etc.
+});
+
+// Delete events of specific type only
+const typeSuccess = await client.deleteFromSubject("user-123", {
+  type: "user.login", // Only delete login events
+});
+
 // Stream events
 const stream = client.streamEventsFromSubject("user-123", {
   fromId: 1,
@@ -71,6 +82,18 @@ stream.subscribe({
   complete: () => {
     console.log("Stream completed");
   },
+});
+
+// Stream events with type filtering
+const typeFilteredStream = client.streamEventsFromSubject("user-123", {
+  fromId: 1,
+  type: "user.login", // Only stream login events
+});
+
+// Stream events recursively (from multiple subjects)
+const recursiveStream = client.streamEventsFromSubject("user-", {
+  fromId: 1,
+  recursive: true, // Streams from "user-123", "user-456", etc.
 });
 ```
 
@@ -106,23 +129,29 @@ Creates a new event and returns its ID. The request object should contain:
 
 Retrieves an event by its ID.
 
-##### `streamEventsFromSubject(subject: string, options?: { fromId?: number }): Observable<StreamEventsFromSubjectReply>`
+##### `streamEventsFromSubject(subject: string, options?: { fromId?: number, type?: string, recursive?: boolean }): Observable<StreamEventsFromSubjectReply>`
 
 Streams events for a given subject. The options parameter is optional and can include:
 
 - `fromId`: Start streaming from a specific event ID
+- `type`: Filter events by specific type
+- `recursive`: When `true`, matches subjects that start with the given subject (e.g., "test" matches "test", "test/1", "test/sub/path")
 
-##### `getHistoricEventsFromSubject(subject: string, options?: { fromId?: number }): Promise<EventsFromSubjectReply>`
+##### `getHistoricEventsFromSubject(subject: string, options?: { fromId?: number, type?: string, recursive?: boolean }): Promise<EventsFromSubjectReply>`
 
 Retrieves historic events for a given subject. The options parameter is optional and can include:
 
 - `fromId`: Start from a specific event ID
+- `type`: Filter events by specific type
+- `recursive`: When `true`, matches subjects that start with the given subject
 
-##### `deleteFromSubject(subject: string, options?: { fromId?: number }): Promise<boolean>`
+##### `deleteFromSubject(subject: string, options?: { fromId?: number, type?: string, recursive?: boolean }): Promise<boolean>`
 
 Deletes events from a given subject. The options parameter is optional and can include:
 
 - `fromId`: Delete events with ID greater than or equal to this value (defaults to 0 if not provided)
+- `type`: Only delete events of the specified type
+- `recursive`: When `true`, deletes events from subjects that start with the given subject
 
 Returns `true` on successful deletion.
 

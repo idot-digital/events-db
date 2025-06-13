@@ -6,6 +6,6 @@ CREATE TABLE IF NOT EXISTS events (
     subject VARCHAR(255) NOT NULL,
     time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     data VARBINARY(60000) NOT NULL,
-    INDEX idx_subject (subject),
-    INDEX idx_time (time)
+    INDEX idx_subject_id (subject, id),
+    INDEX idx_subject_type_id (subject, type, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
