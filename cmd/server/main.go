@@ -45,17 +45,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Read and execute schema.sql
-	schemaSQL, err := os.ReadFile("schema.sql")
-	if err != nil {
-		log.Error("Failed to read schema.sql", "error", err)
-		os.Exit(1)
-	}
+	// Read and execute schema.sql (skip for managed databases like PlanetScale)
+	if !cfg.SkipSchemaCreation {
+		schemaSQL, err := os.ReadFile("schema.sql")
+		if err != nil {
+			log.Error("Failed to read schema.sql", "error", err)
+			os.Exit(1)
+		}
 
-	_, err = d.Exec(string(schemaSQL))
-	if err != nil {
-		log.Error("Failed to execute schema.sql", "error", err)
-		os.Exit(1)
+		_, err = d.Exec(string(schemaSQL))
+		if err != nil {
+			log.Error("Failed to execute schema.sql", "error", err)
+			log.Info("If using a managed database service (e.g., PlanetScale), set SKIP_SCHEMA_CREATION=true")
+			os.Exit(1)
+		}
+	} else {
+		log.Info("Skipping schema creation (SKIP_SCHEMA_CREATION=true)")
 	}
 
 	queries := database.New(d)

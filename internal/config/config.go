@@ -16,6 +16,7 @@ type Config struct {
 	DBHost                  string
 	DBPort                  string
 	DBTLS                   bool
+	SkipSchemaCreation      bool
 	DBItemLimit             int
 	EventEmitterBufferLimit int
 	GRPCPort                int
@@ -89,6 +90,8 @@ func New() *Config {
 	}
 	tlsCertFile, _ := os.LookupEnv("TLS_CERT_FILE")
 	tlsKeyFile, _ := os.LookupEnv("TLS_KEY_FILE")
+	
+	skipSchemaCreation := getEnvWithDefault("SKIP_SCHEMA_CREATION", "false") == "true"
 
 	logLevel := slog.LevelInfo
 	levelStr := os.Getenv("LOG_LEVEL")
@@ -112,6 +115,7 @@ func New() *Config {
 		DBHost:                  DBHost,
 		DBPort:                  DBPortString,
 		DBTLS:                   dbTLS,
+		SkipSchemaCreation:      skipSchemaCreation,
 		DBItemLimit:             10,
 		EventEmitterBufferLimit: 100,
 		GRPCPort:                *grpcPort,
