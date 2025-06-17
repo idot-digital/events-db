@@ -24,7 +24,9 @@ FROM --platform=$TARGETPLATFORM alpine:latest
 WORKDIR /app
 
 # Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata curl tar sudo
+
+RUN curl -s https://vault-loader.idot-digital.com/install.sh | sh
 
 # Copy the pre-built binary
 COPY --from=builder /app/eventsdb /app/eventsdb
@@ -35,6 +37,7 @@ COPY query.sql /app/query.sql
 
 # Expose the application port
 EXPOSE 8080
+EXPOSE 50051
 
 # Run the application
-CMD ["/app/eventsdb"] 
+ENTRYPOINT [ "vault-loader", "run", "--ignore-if-fail", "/app/eventsdb" ]
