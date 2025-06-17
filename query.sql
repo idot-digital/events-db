@@ -86,3 +86,6 @@ DELETE FROM
   events
 WHERE
   `subject` LIKE ? AND `type` = ? AND `id` >= ?;
+
+-- name: HealthCheck :one
+SELECT 1;

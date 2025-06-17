@@ -114,6 +114,7 @@ func (s *Server) GetQueries() *database.Queries {
 	return s.queries
 }
 
+
 func (s *Server) AttachListener() (chan *models.Event, *list.Element, error) {
 	// For backward compatibility, create a filter that matches all events
 	return s.AttachFilteredListener(EventFilter{

@@ -179,7 +179,7 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	for {
 		var events []database.Event
 		var err error
-		
+
 		// Determine which query to use based on recursive and type parameters
 		if recursive {
 			subjectPattern := subject + "%"
@@ -210,7 +210,7 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 				})
 			}
 		}
-		
+
 		if err != nil {
 			h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -255,13 +255,13 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 	if eventType != "" {
 		eventTypePtr = &eventType
 	}
-	
+
 	filter := server.EventFilter{
 		Subject:   subject,
 		Type:      eventTypePtr,
 		Recursive: recursive,
 	}
-	
+
 	channel, listener, err := h.server.AttachFilteredListener(filter)
 	if err != nil {
 		h.server.GetLogger().Error("Failed to attach listener", "subject", subject, "error", err)
@@ -330,7 +330,7 @@ func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *ht
 
 	var events []database.Event
 	var err error
-	
+
 	// Determine which query to use based on recursive and type parameters
 	if recursive {
 		subjectPattern := subject + "%"
@@ -361,7 +361,7 @@ func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *ht
 			})
 		}
 	}
-	
+
 	if err != nil {
 		h.server.GetLogger().Error("Failed to get events", "subject", subject, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -449,7 +449,7 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 	}
 
 	var err error
-	
+
 	// Determine which delete query to use based on recursive and type parameters
 	if recursive {
 		subjectPattern := subject + "%"
@@ -479,7 +479,7 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 			})
 		}
 	}
-	
+
 	if err != nil {
 		h.server.GetLogger().Error("Failed to delete events from subject", "subject", subject, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -488,4 +488,29 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func (h *HTTPHandlers) HealthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	_, err := h.server.GetQueries().HealthCheck(r.Context())
+	if err != nil {
+		h.server.GetLogger().Error("Health check failed - database connection error", "error", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "unhealthy",
+			"error":  "database connection failed",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "healthy",
+	})
 }

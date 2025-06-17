@@ -116,6 +116,9 @@ func main() {
 	// Add Prometheus metrics endpoint (no auth required)
 	mux.Handle("/metrics", promhttp.Handler())
 
+	// Add health endpoint (no auth required)
+	mux.HandleFunc("/health", middleware.Metrics(httpHandlers.HealthHandler, "health_check"))
+
 	// Wrap handlers with auth and metrics middleware
 	mux.HandleFunc("/subjects", middleware.Auth(middleware.Metrics(httpHandlers.GetSubjectsHandler, "get_subjects"), cfg.AuthToken))
 	mux.HandleFunc("/events", middleware.Auth(middleware.Metrics(httpHandlers.CreateEventHandler, "create_event"), cfg.AuthToken))

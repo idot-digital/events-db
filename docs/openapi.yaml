@@ -79,6 +79,17 @@ components:
           enum: ["ok"]
           description: Status of the delete operation
 
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["healthy", "unhealthy"]
+          description: Health status of the service
+        error:
+          type: string
+          description: Error message if unhealthy (optional)
+
 paths:
   /events:
     post:
@@ -195,6 +206,24 @@ paths:
           description: Unauthorized - Invalid or missing token
         "500":
           description: Internal server error
+
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Check the health status of the service and database connectivity
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "500":
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
 
   /metrics:
     get:

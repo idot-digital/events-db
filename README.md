@@ -193,6 +193,16 @@ CREATE TABLE events (
 
 The composite indexes are optimized for the query patterns used in subject-based filtering and type filtering operations.
 
+## Health Check
+
+The service provides a health check endpoint:
+
+```http
+GET /health
+```
+
+Returns `200 OK` with `{"status": "healthy"}` when the service and database are healthy, or `500` with `{"status": "unhealthy", "error": "database connection failed"}` when there are issues.
+
 ## Metrics
 
 The service exposes Prometheus metrics at the `/metrics` endpoint:
