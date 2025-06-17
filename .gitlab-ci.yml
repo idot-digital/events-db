@@ -70,7 +70,7 @@ sign_and_notarize:
   tags:
     - macos
   script:
-    - lipo -create -output bin/eventsdb-darwin bin/eventsdb-cli-darwin-arm64 bin/eventsdb-cli-darwin-amd64
+    - lipo -create -output bin/eventsdb-darwin bin/eventsdb-darwin-arm64 bin/eventsdb-darwin-amd64
     - 'codesign -v -f --timestamp --options=runtime --sign "Developer ID Application: Luis Kugel (FG5343Y9KB)" "bin/eventsdb-darwin"'
     - PACKAGE_NAME="EventsDB"
     - mkdir pkg_payload
@@ -79,8 +79,8 @@ sign_and_notarize:
     - xcrun notarytool submit "events-db.pkg" --apple-id "${APPLEID}" --team-id "${APPLETEAMID}" --password "${APPLEIDPASS}" --wait
     - xcrun stapler staple "events-db.pkg"
     - mv events-db.pkg bin/
-    - rm bin/v9e-cli-darwin-arm64
-    - rm bin/v9e-cli-darwin-amd64
+    - rm bin/eventsdb-darwin-arm64
+    - rm bin/eventsdb-darwin-amd64
     - rm bin/eventsdb-darwin
   needs:
     - build_darwin_amd64
