@@ -48,7 +48,7 @@ func New() *Config {
 			// Fall back to individual env vars if URL parsing fails
 			DBUser = getEnvWithDefault("MYSQL_USER", "root")
 			DBPassword = getEnvWithDefault("MYSQL_PASSWORD", "root")
-			DBName = getEnvWithDefault("MYSQL_DATABASE_NAME", "root")
+			DBName = getEnvWithDefault("MYSQL_DATABASE_NAME", "dev")
 			DBHost = getEnvWithDefault("MYSQL_HOST", "localhost")
 			DBPortString = getEnvWithDefault("MYSQL_PORT", "3306")
 			dbTLS = getEnvWithDefault("MYSQL_TLS", "false") == "true"
@@ -65,7 +65,7 @@ func New() *Config {
 				DBPortString = "3306"
 			}
 			DBName = strings.TrimPrefix(parsedURL.Path, "/")
-			
+
 			// Check for SSL/TLS in query parameters
 			queryParams := parsedURL.Query()
 			if sslParam := queryParams.Get("ssl"); sslParam != "" {
@@ -79,7 +79,7 @@ func New() *Config {
 		// Use individual environment variables
 		DBUser = getEnvWithDefault("MYSQL_USER", "root")
 		DBPassword = getEnvWithDefault("MYSQL_PASSWORD", "root")
-		DBName = getEnvWithDefault("MYSQL_DATABASE_NAME", "root")
+		DBName = getEnvWithDefault("MYSQL_DATABASE_NAME", "dev")
 		DBHost = getEnvWithDefault("MYSQL_HOST", "localhost")
 		DBPortString = getEnvWithDefault("MYSQL_PORT", "3306")
 		dbTLS = getEnvWithDefault("MYSQL_TLS", "false") == "true"
@@ -90,7 +90,7 @@ func New() *Config {
 	}
 	tlsCertFile, _ := os.LookupEnv("TLS_CERT_FILE")
 	tlsKeyFile, _ := os.LookupEnv("TLS_KEY_FILE")
-	
+
 	skipSchemaCreation := getEnvWithDefault("SKIP_SCHEMA_CREATION", "false") == "true"
 
 	logLevel := slog.LevelInfo
@@ -133,11 +133,11 @@ func New() *Config {
 func (c *Config) GetDBURI() string {
 	baseURI := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName)
-	
+
 	if c.DBTLS {
 		baseURI += "&tls=true"
 	}
-	
+
 	return baseURI
 }
 

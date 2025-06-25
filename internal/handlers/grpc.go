@@ -56,7 +56,7 @@ func (h *GRPCHandlers) CreateEvent(ctx context.Context, req *pb.CreateEventReque
 }
 
 func (h *GRPCHandlers) GetEventByID(ctx context.Context, req *pb.GetEventByIDRequest) (*pb.Event, error) {
-	res, err := h.server.GetQueries().GetEventByID(ctx, req.Id)
+	res, err := h.server.GetQueries().GetEventByID(ctx, sql.NullInt64{Int64: req.Id, Valid: true})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, status.Error(codes.NotFound, "Event not found")
@@ -91,38 +91,41 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.EventsFromSubjectRequest,
 	for {
 		var events []database.Event
 		var err error
-		
+
 		// Determine which query to use based on recursive and type parameters
 		if req.Recursive != nil && *req.Recursive {
 			subjectPattern := req.Subject + "%"
 			if req.Type != nil {
 				events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(ctx, database.GetEventsBySubjectPrefixAndTypeParams{
-					ID:      lastID,
-					Subject: subjectPattern,
-					Type:    *req.Type,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: subjectPattern, Valid: true},
+					Type:    sql.NullString{String: *req.Type, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			} else {
 				events, err = h.server.GetQueries().GetEventsBySubjectPrefix(ctx, database.GetEventsBySubjectPrefixParams{
-					ID:      lastID,
-					Subject: subjectPattern,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: subjectPattern, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			}
 		} else {
 			if req.Type != nil {
 				events, err = h.server.GetQueries().GetEventsBySubjectAndType(ctx, database.GetEventsBySubjectAndTypeParams{
-					ID:      lastID,
-					Subject: req.Subject,
-					Type:    *req.Type,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: req.Subject, Valid: true},
+					Type:    sql.NullString{String: *req.Type, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			} else {
 				events, err = h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{
-					Subject: req.Subject,
+					Subject: sql.NullString{String: req.Subject, Valid: true},
 					Limit:   h.streamBatchSize,
-					ID:      lastID,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
 				})
 			}
 		}
-		
+
 		if err != nil {
 			h.server.GetLogger().Error("Failed to get events", "subject", req.Subject, "error", err)
 			return status.Error(codes.Internal, "Failed to get events")
@@ -171,13 +174,13 @@ func (h *GRPCHandlers) StreamEventsFromSubject(req *pb.EventsFromSubjectRequest,
 	if req.Recursive != nil {
 		recursive = *req.Recursive
 	}
-	
+
 	filter := server.EventFilter{
 		Subject:   req.Subject,
 		Type:      eventType,
 		Recursive: recursive,
 	}
-	
+
 	channel, listener, err := h.server.AttachFilteredListener(filter)
 	if err != nil {
 		h.server.GetLogger().Error("Failed to attach listener", "subject", req.Subject, "error", err)
@@ -220,38 +223,41 @@ func (h *GRPCHandlers) GetHistoricEventsFromSubject(ctx context.Context, req *pb
 
 	var events []database.Event
 	var err error
-	
+
 	// Determine which query to use based on recursive and type parameters
 	if req.Recursive != nil && *req.Recursive {
 		subjectPattern := req.Subject + "%"
 		if req.Type != nil {
 			events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(ctx, database.GetEventsBySubjectPrefixAndTypeParams{
-				ID:      lastID,
-				Subject: subjectPattern,
-				Type:    *req.Type,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Type:    sql.NullString{String: *req.Type, Valid: true},
+				Limit:   h.streamBatchSize,
 			})
 		} else {
 			events, err = h.server.GetQueries().GetEventsBySubjectPrefix(ctx, database.GetEventsBySubjectPrefixParams{
-				ID:      lastID,
-				Subject: subjectPattern,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Limit:   h.streamBatchSize,
 			})
 		}
 	} else {
 		if req.Type != nil {
 			events, err = h.server.GetQueries().GetEventsBySubjectAndType(ctx, database.GetEventsBySubjectAndTypeParams{
-				ID:      lastID,
-				Subject: req.Subject,
-				Type:    *req.Type,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: req.Subject, Valid: true},
+				Type:    sql.NullString{String: *req.Type, Valid: true},
+				Limit:   h.streamBatchSize,
 			})
 		} else {
 			events, err = h.server.GetQueries().GetEventsBySubject(ctx, database.GetEventsBySubjectParams{
-				Subject: req.Subject,
+				Subject: sql.NullString{String: req.Subject, Valid: true},
 				Limit:   h.streamBatchSize, //TODO: use a different setting
-				ID:      lastID,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
 			})
 		}
 	}
-	
+
 	if err != nil {
 		h.server.GetLogger().Error("Failed to get events", "subject", req.Subject, "error", err)
 		return nil, status.Error(codes.Internal, "Failed to get events")
@@ -297,37 +303,37 @@ func (h *GRPCHandlers) DeleteFromSubject(ctx context.Context, req *pb.EventsFrom
 	}
 
 	var err error
-	
+
 	// Determine which delete query to use based on recursive and type parameters
 	if req.Recursive != nil && *req.Recursive {
 		subjectPattern := req.Subject + "%"
 		if req.Type != nil {
 			err = h.server.GetQueries().DeleteFromSubjectRecursiveWithType(ctx, database.DeleteFromSubjectRecursiveWithTypeParams{
-				Subject: subjectPattern,
-				Type:    *req.Type,
-				ID:      ID,
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Type:    sql.NullString{String: *req.Type, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		} else {
 			err = h.server.GetQueries().DeleteFromSubjectRecursive(ctx, database.DeleteFromSubjectRecursiveParams{
-				Subject: subjectPattern,
-				ID:      ID,
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		}
 	} else {
 		if req.Type != nil {
 			err = h.server.GetQueries().DeleteFromSubjectWithType(ctx, database.DeleteFromSubjectWithTypeParams{
-				Subject: req.Subject,
-				Type:    *req.Type,
-				ID:      ID,
+				Subject: sql.NullString{String: req.Subject, Valid: true},
+				Type:    sql.NullString{String: *req.Type, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		} else {
 			err = h.server.GetQueries().DeleteFromSubject(ctx, database.DeleteFromSubjectParams{
-				Subject: req.Subject,
-				ID:      ID,
+				Subject: sql.NullString{String: req.Subject, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		}
 	}
-	
+
 	if err != nil {
 		h.server.GetLogger().Error("Failed to delete events", "subject", req.Subject, "error", err)
 		return nil, status.Error(codes.Internal, "Failed to delete events")

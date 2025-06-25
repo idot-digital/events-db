@@ -111,7 +111,7 @@ func (h *HTTPHandlers) GetEventByIDHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := h.server.GetQueries().GetEventByID(r.Context(), id)
+	res, err := h.server.GetQueries().GetEventByID(r.Context(), sql.NullInt64{Int64: id, Valid: true})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Event not found", http.StatusNotFound)
@@ -185,28 +185,31 @@ func (h *HTTPHandlers) StreamEventsFromSubjectHandler(w http.ResponseWriter, r *
 			subjectPattern := subject + "%"
 			if eventType != "" {
 				events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(r.Context(), database.GetEventsBySubjectPrefixAndTypeParams{
-					ID:      lastID,
-					Subject: subjectPattern,
-					Type:    eventType,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: subjectPattern, Valid: true},
+					Type:    sql.NullString{String: eventType, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			} else {
 				events, err = h.server.GetQueries().GetEventsBySubjectPrefix(r.Context(), database.GetEventsBySubjectPrefixParams{
-					ID:      lastID,
-					Subject: subjectPattern,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: subjectPattern, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			}
 		} else {
 			if eventType != "" {
 				events, err = h.server.GetQueries().GetEventsBySubjectAndType(r.Context(), database.GetEventsBySubjectAndTypeParams{
-					ID:      lastID,
-					Subject: subject,
-					Type:    eventType,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
+					Subject: sql.NullString{String: subject, Valid: true},
+					Type:    sql.NullString{String: eventType, Valid: true},
+					Limit:   h.streamBatchSize,
 				})
 			} else {
 				events, err = h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
-					Subject: subject,
+					Subject: sql.NullString{String: subject, Valid: true},
 					Limit:   h.streamBatchSize,
-					ID:      lastID,
+					ID:      sql.NullInt64{Int64: lastID, Valid: true},
 				})
 			}
 		}
@@ -336,28 +339,31 @@ func (h *HTTPHandlers) GetHistoricEventsFromSubject(w http.ResponseWriter, r *ht
 		subjectPattern := subject + "%"
 		if eventType != "" {
 			events, err = h.server.GetQueries().GetEventsBySubjectPrefixAndType(r.Context(), database.GetEventsBySubjectPrefixAndTypeParams{
-				ID:      lastID,
-				Subject: subjectPattern,
-				Type:    eventType,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Type:    sql.NullString{String: eventType, Valid: true},
+				Limit:   h.streamBatchSize,
 			})
 		} else {
 			events, err = h.server.GetQueries().GetEventsBySubjectPrefix(r.Context(), database.GetEventsBySubjectPrefixParams{
-				ID:      lastID,
-				Subject: subjectPattern,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Limit:   h.streamBatchSize,
 			})
 		}
 	} else {
 		if eventType != "" {
 			events, err = h.server.GetQueries().GetEventsBySubjectAndType(r.Context(), database.GetEventsBySubjectAndTypeParams{
-				ID:      lastID,
-				Subject: subject,
-				Type:    eventType,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
+				Subject: sql.NullString{String: subject, Valid: true},
+				Limit:   h.streamBatchSize,
+				Type:    sql.NullString{String: eventType, Valid: true},
 			})
 		} else {
 			events, err = h.server.GetQueries().GetEventsBySubject(r.Context(), database.GetEventsBySubjectParams{
-				Subject: subject,
+				Subject: sql.NullString{String: subject, Valid: true},
 				Limit:   h.streamBatchSize,
-				ID:      lastID,
+				ID:      sql.NullInt64{Int64: lastID, Valid: true},
 			})
 		}
 	}
@@ -455,27 +461,27 @@ func (h *HTTPHandlers) DeleteFromSubject(w http.ResponseWriter, r *http.Request)
 		subjectPattern := subject + "%"
 		if eventType != "" {
 			err = h.server.GetQueries().DeleteFromSubjectRecursiveWithType(r.Context(), database.DeleteFromSubjectRecursiveWithTypeParams{
-				Subject: subjectPattern,
-				Type:    eventType,
-				ID:      ID,
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				Type:    sql.NullString{String: eventType, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		} else {
 			err = h.server.GetQueries().DeleteFromSubjectRecursive(r.Context(), database.DeleteFromSubjectRecursiveParams{
-				Subject: subjectPattern,
-				ID:      ID,
+				Subject: sql.NullString{String: subjectPattern, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		}
 	} else {
 		if eventType != "" {
 			err = h.server.GetQueries().DeleteFromSubjectWithType(r.Context(), database.DeleteFromSubjectWithTypeParams{
-				Subject: subject,
-				Type:    eventType,
-				ID:      ID,
+				Subject: sql.NullString{String: subject, Valid: true},
+				Type:    sql.NullString{String: eventType, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		} else {
 			err = h.server.GetQueries().DeleteFromSubject(r.Context(), database.DeleteFromSubjectParams{
-				Subject: subject,
-				ID:      ID,
+				Subject: sql.NullString{String: subject, Valid: true},
+				ID:      sql.NullInt64{Int64: ID, Valid: true},
 			})
 		}
 	}

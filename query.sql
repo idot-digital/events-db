@@ -10,7 +10,7 @@ SELECT
 FROM
   events
 WHERE
-  id = ?
+  id = sqlc.narg('id')
 LIMIT 1;
 
 -- name: GetEventsBySubject :many
@@ -19,8 +19,8 @@ SELECT
 FROM
   events
 WHERE
-  `id` > ?
-  AND `subject` = ?
+  `id` > sqlc.narg('id')
+  AND `subject` = sqlc.narg('subject')
 LIMIT
   ?;
 
@@ -30,9 +30,9 @@ SELECT
 FROM
   events
 WHERE
-  `id` > ?
-  AND `subject` LIKE ?
-LIMIT 50;
+  `id` > sqlc.narg('id')
+  AND `subject` LIKE sqlc.narg('subject')
+LIMIT ?;
 
 -- name: GetEventsBySubjectAndType :many
 SELECT
@@ -40,10 +40,10 @@ SELECT
 FROM
   events
 WHERE
-  `id` > ?
-  AND `subject` = ?
-  AND `type` = ?
-LIMIT 50;
+  `id` > sqlc.narg('id')
+  AND `subject` = sqlc.narg('subject')
+  AND `type` = sqlc.narg('type')
+LIMIT ?;
 
 -- name: GetEventsBySubjectPrefixAndType :many
 SELECT
@@ -51,10 +51,10 @@ SELECT
 FROM
   events
 WHERE
-  `id` > ?
-  AND `subject` LIKE ?
-  AND `type` = ?
-LIMIT 50;
+  `id` > sqlc.narg('id')
+  AND `subject` LIKE sqlc.narg('subject')
+  AND `type` = sqlc.narg('type')
+LIMIT ?;
 
 
 -- name: GetAvailableSubjects :many
@@ -67,25 +67,25 @@ FROM
 DELETE FROM
   events
 WHERE
-  `subject` = ? AND `id` >= ?;
+  `subject` = sqlc.narg('subject') AND `id` >= sqlc.narg('id');
 
 -- name: DeleteFromSubjectRecursive :exec
 DELETE FROM
   events
 WHERE
-  `subject` LIKE ? AND `id` >= ?;
+  `subject` LIKE sqlc.narg('subject') AND `id` >= sqlc.narg('id');
 
 -- name: DeleteFromSubjectWithType :exec
 DELETE FROM
   events
 WHERE
-  `subject` = ? AND `type` = ? AND `id` >= ?;
+  `subject` = sqlc.narg('subject') AND `type` = sqlc.narg('type') AND `id` >= sqlc.narg('id');
 
 -- name: DeleteFromSubjectRecursiveWithType :exec
 DELETE FROM
   events
 WHERE
-  `subject` LIKE ? AND `type` = ? AND `id` >= ?;
+  `subject` LIKE sqlc.narg('subject') AND `type` = sqlc.narg('type') AND `id` >= sqlc.narg('id');
 
 -- name: HealthCheck :one
 SELECT 1;
