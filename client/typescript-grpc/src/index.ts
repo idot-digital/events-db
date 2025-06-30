@@ -4,7 +4,6 @@ import {
   EventsFromSubjectRequest,
   Event,
   EventsFromSubjectReply,
-  OkReply,
 } from "../gen/eventsdb";
 import * as grpc from "@grpc/grpc-js";
 import * as fs from "fs";
@@ -34,8 +33,13 @@ export class EventsDBClient {
     // Create credentials based on TLS configuration
     let credentials: grpc.ChannelCredentials;
     if (config.tlsCertFile && config.tlsKeyFile) {
-      const rootCert = fs.readFileSync(config.tlsCertFile);
-      credentials = grpc.credentials.createSsl(rootCert);
+      try {
+        const rootCert = fs.readFileSync(config.tlsCertFile);
+        credentials = grpc.credentials.createSsl(rootCert);
+      } catch (error) {
+        console.error("Error reading TLS certificate file:", error);
+        throw new Error(`Failed to read TLS certificate: ${error}`);
+      }
     } else {
       credentials = grpc.credentials.createInsecure();
     }
@@ -122,20 +126,31 @@ export class EventsDBClient {
     this.client = new EventsDBClientImpl(rpc, { service: "grpc.EventsDB" });
   }
 
-  async createEvent(request: CreateEventRequest): Promise<number> {
-    const response = await this.client.CreateEvent({
-      ...request,
-      source: this.source,
-    });
-    return response.id;
+  public async createEvent(
+    request: CreateEventRequest
+  ): Promise<number | null> {
+    try {
+      const response = await this.client.CreateEvent({
+        ...request,
+        source: this.source,
+      });
+      return response.id;
+    } catch (error) {
+      console.error("Error creating event:", error);
+      return null;
+    }
   }
 
-  async getEventByID(id: number): Promise<Event> {
-    const request: GetEventByIDRequest = { id };
-    return await this.client.GetEventByID(request);
+  public async getEventByID(id: number): Promise<Event | null> {
+    try {
+      const request: GetEventByIDRequest = { id };
+      return await this.client.GetEventByID(request);
+    } catch (error) {
+      return null;
+    }
   }
 
-  streamEventsFromSubject(
+  public streamEventsFromSubject(
     subject: string,
     options: {
       fromId?: number;
@@ -143,33 +158,45 @@ export class EventsDBClient {
       recursive?: boolean;
     } = {}
   ): Observable<EventsFromSubjectReply> {
-    const request: EventsFromSubjectRequest = {
-      subject,
-      fromId: options.fromId,
-      type: options.type,
-      recursive: options.recursive,
-    };
-    return this.client.StreamEventsFromSubject(request);
+    try {
+      const request: EventsFromSubjectRequest = {
+        subject,
+        fromId: options.fromId,
+        type: options.type,
+        recursive: options.recursive,
+      };
+      return this.client.StreamEventsFromSubject(request);
+    } catch (error) {
+      console.error("Error streaming events from subject:", error);
+      return new Observable<EventsFromSubjectReply>((subscriber) => {
+        subscriber.error(error);
+      });
+    }
   }
 
-  getHistoricEventsFromSubject(
+  public async getHistoricEventsFromSubject(
     subject: string,
     options: {
       fromId?: number;
       type?: string;
       recursive?: boolean;
     } = {}
-  ): Promise<EventsFromSubjectReply> {
-    const request: EventsFromSubjectRequest = {
-      subject,
-      fromId: options.fromId ?? undefined,
-      type: options.type,
-      recursive: options.recursive,
-    };
-    return this.client.GetHistoricEventsFromSubject(request);
+  ): Promise<EventsFromSubjectReply | null> {
+    try {
+      const request: EventsFromSubjectRequest = {
+        subject,
+        fromId: options.fromId ?? undefined,
+        type: options.type,
+        recursive: options.recursive,
+      };
+      return await this.client.GetHistoricEventsFromSubject(request);
+    } catch (error) {
+      console.error("Error getting historic events from subject:", error);
+      return null;
+    }
   }
 
-  async deleteFromSubject(
+  public async deleteFromSubject(
     subject: string,
     options: {
       fromId?: number;
@@ -177,13 +204,18 @@ export class EventsDBClient {
       recursive?: boolean;
     } = {}
   ): Promise<boolean> {
-    const request: EventsFromSubjectRequest = {
-      subject,
-      fromId: options.fromId ?? undefined,
-      type: options.type,
-      recursive: options.recursive,
-    };
-    const response = await this.client.DeleteFromSubject(request);
-    return response.ok;
+    try {
+      const request: EventsFromSubjectRequest = {
+        subject,
+        fromId: options.fromId ?? undefined,
+        type: options.type,
+        recursive: options.recursive,
+      };
+      const response = await this.client.DeleteFromSubject(request);
+      return response.ok;
+    } catch (error) {
+      console.error("Error deleting from subject:", error);
+      return false;
+    }
   }
 }
